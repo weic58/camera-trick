@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
-  <title>MindAR Card Target Prototype</title>
+  <title>MindAR Card Target Prototype v2</title>
 
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -24,6 +24,19 @@
       color:#fff;
     }
     body{position:relative}
+
+    /* 關鍵：讓 A-Frame 場景與 canvas 背景透明 */
+    a-scene{
+      position:fixed !important;
+      inset:0 !important;
+      background:transparent !important;
+    }
+    .a-canvas{
+      background:transparent !important;
+    }
+    canvas, video{
+      background:transparent !important;
+    }
 
     .overlay-ui{
       position:fixed; inset:0; pointer-events:none; z-index:20;
@@ -140,10 +153,11 @@
   <a-scene
     mindar-image="imageTargetSrc: ./targets.mind; uiScanning: no; uiLoading: no; uiError: no; warmupTolerance: 2; missTolerance: 10; filterMinCF: 0.001; filterBeta: 10"
     color-space="sRGB"
-    renderer="colorManagement: true; physicallyCorrectLights: false"
+    renderer="colorManagement: true; physicallyCorrectLights: false; alpha: true"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false"
     embedded
+    background="color: transparent"
   >
     <a-assets>
       <img id="overlay-card" src="./card.png" />
@@ -151,16 +165,14 @@
 
     <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
 
-    <!-- targetIndex 0 = the first image compiled into targets.mind -->
     <a-entity id="target" mindar-image-target="targetIndex: 0">
-      <!-- 1 x 0.7159 ~= 63:88 aspect ratio -->
       <a-plane
         id="card-plane"
         src="#overlay-card"
         position="0 0 0.01"
         width="1"
         height="1.3968"
-        material="transparent: true; opacity: 1; shader: flat"
+        material="transparent: true; opacity: 1; shader: flat; side: double"
       ></a-plane>
     </a-entity>
   </a-scene>
@@ -263,7 +275,6 @@
         plane.setAttribute('material', 'opacity', 1);
       });
 
-      // 點任何空白處都淡出
       document.body.addEventListener('click', (e) => {
         const isButton = e.target.closest('#shutter') || e.target.closest('#switchCamera');
         if(isButton) return;
@@ -271,8 +282,6 @@
         fadeStart = performance.now();
       });
 
-      // 這裡只先放 UI，真正切前後鏡頭要改 MindAR camera source 設定。
-      // 先做最小 prototype，不在這版硬切 camera，避免又引入新變數。
       switchCamera.addEventListener('click', () => {
         hint.textContent = '這版先專注驗證 image target 追蹤穩定度';
       });
