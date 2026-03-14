@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <title>Magic Card Camera v2</title>
+  <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+  <style>
+    :root{
+      --ui-white: rgba(255,255,255,.94);
+      --ui-soft: rgba(255,255,255,.72);
+      --ui-dim: rgba(255,255,255,.36);
+      --ui-bg: rgba(0,0,0,.42);
+      --ui-bg-2: rgba(255,255,255,.10);
+      --ui-border: rgba(255,255,255,.12);
+      --yellow: #ffd84f;
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{
+      margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000;
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      color:#fff;
+    }
+    #app{position:relative;width:100vw;height:100vh;background:#000;overflow:hidden}
+    #video,#output,#guide{
+      position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    }
+    #video.mirror,#output.mirror{transform:scaleX(-1)}
+    #guide{pointer-events:none}
+    .topFade{
+      position:absolute;left:0;right:0;top:0;height:18vh;min-height:90px;pointer-events:none;z-index:5;
+      background:linear-gradient(to bottom,rgba(0,0,0,.78),rgba(0,0,0,.28),rgba(0,0,0,0));
+    }
+    .bottomFade{
+      position:absolute;left:0;right:0;bottom:0;height:29vh;min-height:210px;pointer-events:none;z-index:5;
+      background:linear-gradient(to top,rgba(0,0,0,.95),rgba(0,0,0,.78),rgba(0,0,0,0));
+    }
+    .gridline{position:absolute;background:rgba(255,255,255,.30);pointer-events:none;z-index:4}
+    .v1,.v2{top:0;bottom:0;width:1px}
+    .h1,.h2{left:0;right:0;height:1px}
+    .v1{left:33.333%}.v2{left:66.666%}
+    .h1{top:33.333%}.h2{top:66.666%}
+
+    .focusCross{
+      position:absolute;left:50%;top:50%;width:40px;height:40px;transform:translate(-50%,-50%);
+      pointer-events:none;z-index:4;
+    }
+    .focusCross::before,.focusCross::after{
+      content:"";position:absolute;background:var(--yellow);box-shadow:0 0 6px rgba(255,216,79,.18);
+    }
+    .focusCross::before{left:0;right:0;top:19px;height:2px}
+    .focusCross::after{top:0;bottom:0;left:19px;width:2px}
+
+    .toolbar{
+      position:absolute;top:max(12px,env(safe-area-inset-top));right:14px;z-index:8;
+      display:flex;gap:10px;align-items:center;
+    }
+    .toolbar .pill{
+      height:46px;padding:0 10px;border-radius:23px;
+      display:flex;align-items:center;gap:4px;
+      background:var(--ui-bg);border:1px solid var(--ui-border);
+      backdrop-filter:blur(10px);
+    }
+    .iconOnly,.iconBtn{
+      width:34px;height:34px;border-radius:17px;border:none;outline:none;
+      display:grid;place-items:center;background:transparent;color:#fff;
+    }
+    .iconOnly svg,.iconBtn svg{width:21px;height:21px}
+    .status{
+      position:absolute;left:12px;top:max(12px,env(safe-area-inset-top));z-index:9;
+      font-size:12px;line-height:1;padding:8px 10px;border-radius:12px;
+      color:rgba(255,255,255,.86);background:rgba(0,0,0,.28);border:1px solid rgba(255,255,255,.08);
+      backdrop-filter:blur(8px);
+    }
+    .hint{
+      position:absolute;left:50%;bottom:calc(26vh + 6px);transform:translateX(-50%);
+      z-index:7;font-size:12px;color:rgba(255,255,255,.72);
+      background:rgba(0,0,0,.32);padding:7px 10px;border-radius:12px;border:1px solid rgba(255,255,255,.08);
+      backdrop-filter:blur(8px);white-space:nowrap;
+    }
+
+    .bottomUI{
+      position:absolute;left:0;right:0;bottom:0;z-index:8;
+      padding:0 18px calc(14px + env(safe-area-inset-bottom));
+    }
+    .modeRow{
+      display:flex;justify-content:center;align-items:center;margin-bottom:12px;
+    }
+    .modePill{
+      display:flex;align-items:center;gap:2px;
+      padding:4px;border-radius:24px;
+      background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.10);backdrop-filter:blur(10px);
+    }
+    .mode{
+      min-width:90px;height:40px;border-radius:20px;display:grid;place-items:center;
+      font-size:15px;font-weight:600;color:var(--ui-soft);
+    }
+    .mode.active{
+      background:rgba(255,255,255,.11);color:var(--yellow);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+
+    .shutterRow{
+      display:grid;grid-template-columns:64px 1fr 64px;align-items:center;
+      padding:2px 0 10px;
+    }
+    .thumb{
+      width:54px;height:54px;border-radius:12px;overflow:hidden;justify-self:start;
+      border:1px solid rgba(255,255,255,.16);background:#555;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+    .thumb img{display:block;width:100%;height:100%;object-fit:cover}
+    #shutter{
+      justify-self:center;width:84px;height:84px;border-radius:50%;border:none;outline:none;cursor:pointer;
+      background:#f6f6f6;
+      box-shadow:0 0 0 6px rgba(255,255,255,.26), inset 0 0 0 2px rgba(0,0,0,.05);
+    }
+    #shutter:active{transform:scale(.97)}
+    #switchCamera{
+      justify-self:end;width:56px;height:56px;border-radius:50%;border:none;outline:none;cursor:pointer;
+      display:grid;place-items:center;background:rgba(255,255,255,.12);
+      backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);
+    }
+    #switchCamera svg{width:30px;height:30px}
+    #switchCamera:active{transform:scale(.96)}
+
+    .flash{
+      position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:20;
+      transition:opacity .16s ease;
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="output"></canvas>
+  <canvas id="guide"></canvas>
+
+  <div class="gridline v1"></div>
+  <div class="gridline v2"></div>
+  <div class="gridline h1"></div>
+  <div class="gridline h2"></div>
+  <div class="focusCross"></div>
+
+  <div class="topFade"></div>
+  <div class="bottomFade"></div>
+
+  <div class="toolbar">
+    <div class="pill">
+      <div class="iconOnly" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4 7 7 0 0 0 20 14.5Z"/>
+        </svg>
+      </div>
+      <div class="iconOnly" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M13 3 5 14h6l-1 7 8-11h-6l1-7Z"/>
+          <path d="M3 3 21 21"/>
+        </svg>
+      </div>
+      <div class="iconOnly" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="status" id="status">初始化中…</div>
+  <div class="hint">點畫面淡化，按快門再變一次</div>
+
+  <div class="bottomUI">
+    <div class="modeRow">
+      <div class="modePill">
+        <div class="mode">錄影</div>
+        <div class="mode active">拍照</div>
+      </div>
+    </div>
+
+    <div class="shutterRow">
+      <div class="thumb" aria-hidden="true">
+        <img id="thumbPreview" alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 108 108'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop stop-color='%23d8d8d8'/><stop offset='1' stop-color='%23666666'/></linearGradient></defs><rect width='108' height='108' fill='url(%23g)'/><rect x='10' y='14' width='88' height='80' rx='12' fill='%23878787'/><circle cx='76' cy='34' r='11' fill='%23bdbdbd'/></svg>">
+      </div>
+
+      <button id="shutter" aria-label="快門"></button>
+
+      <button id="switchCamera" aria-label="切換前後鏡頭" title="切換前後鏡頭">
+        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M7 7h7.6a5.4 5.4 0 0 1 5.4 5.4V13"/>
+          <path d="M17 5l3 3-3 3"/>
+          <path d="M17 17H9.4A5.4 5.4 0 0 1 4 11.6V11"/>
+          <path d="M7 19l-3-3 3-3"/>
+          <rect x="7" y="8" width="10" height="8" rx="2.3"/>
+          <circle cx="12" cy="12" r="1.8"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="flash" id="flash"></div>
+</div>
+
+<script>
+(() => {
+  const video = document.getElementById('video');
+  const output = document.getElementById('output');
+  const guide = document.getElementById('guide');
+  const statusEl = document.getElementById('status');
+  const shutterBtn = document.getElementById('shutter');
+  const switchBtn = document.getElementById('switchCamera');
+  const flashEl = document.getElementById('flash');
+  const thumbPreview = document.getElementById('thumbPreview');
+
+  const outCtx = output.getContext('2d', { alpha: true });
+  const guideCtx = guide.getContext('2d');
+
+  let stream = null;
+  let facingMode = 'environment';
+  let cvReady = false;
+  let processing = false;
+  let animationHandle = null;
+
+  let fadeAlpha = 1.0;
+  let overlayEnabled = true;
+
+  let cardImg = new Image();
+  cardImg.src = 'card.png';
+
+  const offCanvas = document.createElement('canvas');
+  const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+
+  let lastGoodQuad = null;
+  let stableQuad = null;
+  let lostFrames = 0;
+
+  function setStatus(text){ statusEl.textContent = text; }
+
+  function flashScreen(){
+    flashEl.style.opacity = '0.9';
+    setTimeout(() => flashEl.style.opacity = '0', 90);
+  }
+
+  function drawGuide(){
+    guide.width = window.innerWidth;
+    guide.height = window.innerHeight;
+    guideCtx.clearRect(0,0,guide.width,guide.height);
+  }
+
+  window.addEventListener('resize', drawGuide);
+  drawGuide();
+
+  async function stopCamera(){
+    if(stream){
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+  }
+
+  async function startCamera(){
+    await stopCamera();
+    try{
+      setStatus('啟動相機中…');
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio:false,
+        video:{
+          facingMode: { ideal: facingMode },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      });
+      video.srcObject = stream;
+      await video.play();
+
+      const mirrored = facingMode === 'user';
+      video.classList.toggle('mirror', mirrored);
+      output.classList.toggle('mirror', mirrored);
+
+      setStatus(mirrored ? '前鏡頭' : '後鏡頭');
+      resetTracking(true);
+    }catch(err){
+      console.error(err);
+      setStatus('相機啟動失敗');
+      alert('無法開啟相機，請確認已授權相機權限，並使用 HTTPS 或本機環境。');
+    }
+  }
+
+  function resetTracking(resetFade){
+    lastGoodQuad = null;
+    stableQuad = null;
+    lostFrames = 0;
+    if(resetFade) fadeAlpha = 1.0;
+    overlayEnabled = true;
+  }
+
+  function distance(a,b){
+    return Math.hypot(a.x-b.x, a.y-b.y);
+  }
+
+  function polygonArea(pts){
+    let area = 0;
+    for(let i=0;i<pts.length;i++){
+      const p = pts[i];
+      const q = pts[(i+1)%pts.length];
+      area += p.x*q.y - q.x*p.y;
+    }
+    return Math.abs(area)/2;
+  }
+
+  function centerOf(pts){
+    return {
+      x: pts.reduce((s,p)=>s+p.x,0)/pts.length,
+      y: pts.reduce((s,p)=>s+p.y,0)/pts.length
+    };
+  }
+
+  function orderPointsClockwise(pts){
+    const c = centerOf(pts);
+    const sorted = pts.map(p => ({...p, a: Math.atan2(p.y-c.y, p.x-c.x)}))
+      .sort((m,n) => m.a - n.a);
+
+    let start = 0;
+    let min = Infinity;
+    for(let i=0;i<sorted.length;i++){
+      const s = sorted[i].x + sorted[i].y;
+      if(s < min){
+        min = s;
+        start = i;
+      }
+    }
+    return [
+      sorted[start],
+      sorted[(start+1)%4],
+      sorted[(start+2)%4],
+      sorted[(start+3)%4]
+    ];
+  }
+
+  function sideStats(pts){
+    const top = distance(pts[0], pts[1]);
+    const right = distance(pts[1], pts[2]);
+    const bottom = distance(pts[2], pts[3]);
+    const left = distance(pts[3], pts[0]);
+    return {
+      top,right,bottom,left,
+      avgW:(top+bottom)/2,
+      avgH:(left+right)/2
+    };
+  }
+
+  function ensureAspectMatch(pts, srcW, srcH){
+    const s = sideStats(pts);
+    const dstLandscape = s.avgW >= s.avgH;
+    const srcLandscape = srcW >= srcH;
+    if(dstLandscape !== srcLandscape){
+      return [pts[1], pts[2], pts[3], pts[0]];
+    }
+    return pts;
+  }
+
+  function blendPoints(prev, curr, alpha){
+    if(!prev) return curr.map(p => ({x:p.x,y:p.y}));
+    return prev.map((p,i) => ({
+      x: p.x*(1-alpha) + curr[i].x*alpha,
+      y: p.y*(1-alpha) + curr[i].y*alpha
+    }));
+  }
+
+  function expandQuad(pts, scale){
+    const c = centerOf(pts);
+    return pts.map(p => ({
+      x: c.x + (p.x - c.x) * scale,
+      y: c.y + (p.y - c.y) * scale
+    }));
+  }
+
+  function quadSimilarity(a,b){
+    if(!a || !b) return Infinity;
+    const ca = centerOf(a), cb = centerOf(b);
+    const centerDist = Math.hypot(ca.x-cb.x, ca.y-cb.y);
+
+    const sa = sideStats(a), sb = sideStats(b);
+    const sizeDiff = Math.abs(sa.avgW - sb.avgW) + Math.abs(sa.avgH - sb.avgH);
+
+    let cornerDiff = 0;
+    for(let i=0;i<4;i++) cornerDiff += distance(a[i],b[i]);
+    cornerDiff /= 4;
+
+    return centerDist*1.7 + sizeDiff*0.55 + cornerDiff;
+  }
+
+  function rectScore(pts, area, frameW, frameH){
+    const c = centerOf(pts);
+    const s = sideStats(pts);
+    const ratio = Math.max(s.avgW, s.avgH) / Math.max(1, Math.min(s.avgW, s.avgH));
+    const targetRatio = 88/63; // portrait playing card
+    const ratioPenalty = Math.abs(ratio - targetRatio);
+
+    const screenCx = frameW/2;
+    const screenCy = frameH/2;
+    const distToCenter = Math.hypot(c.x-screenCx, c.y-screenCy);
+    const diag = Math.hypot(frameW, frameH);
+
+    const borderMargin = 8;
+    const minX = Math.min(...pts.map(p=>p.x));
+    const maxX = Math.max(...pts.map(p=>p.x));
+    const minY = Math.min(...pts.map(p=>p.y));
+    const maxY = Math.max(...pts.map(p=>p.y));
+    const touchesBorder = minX < borderMargin || minY < borderMargin || maxX > frameW-borderMargin || maxY > frameH-borderMargin;
+
+    const frameArea = frameW*frameH;
+    const areaRatio = area / frameArea;
+    const areaPenalty =
+      areaRatio < 0.01 ? 1.6 :
+      areaRatio > 0.62 ? 2.2 :
+      areaRatio > 0.42 ? 0.85 : 0;
+
+    let score = 0;
+    score += ratioPenalty * 1700;
+    score += (distToCenter/diag) * 920;
+    score += areaPenalty * 700;
+    if(touchesBorder) score += 350;
+    return score;
+  }
+
+  function detectCardQuad(src){
+    const gray = new cv.Mat();
+    const blur = new cv.Mat();
+    const edges = new cv.Mat();
+    const contours = new cv.MatVector();
+    const hierarchy = new cv.Mat();
+
+    try{
+      cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+      cv.GaussianBlur(gray, blur, new cv.Size(5,5), 0, 0, cv.BORDER_DEFAULT);
+      cv.Canny(blur, edges, 36, 110, 3, false);
+
+      const kernel = cv.Mat.ones(3,3,cv.CV_8U);
+      cv.dilate(edges, edges, kernel);
+      kernel.delete();
+
+      cv.findContours(edges, contours, hierarchy, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE);
+
+      let bestPts = null;
+      let bestScore = Infinity;
+
+      for(let i=0;i<contours.size();i++){
+        const cnt = contours.get(i);
+        try{
+          const area = cv.contourArea(cnt, false);
+          if(area < 4500) continue;
+
+          let candidatePts = null;
+          const peri = cv.arcLength(cnt, true);
+          const approx = new cv.Mat();
+          try{
+            cv.approxPolyDP(cnt, approx, 0.018 * peri, true);
+
+            if(approx.rows === 4 && cv.isContourConvex(approx)){
+              const d = approx.data32S;
+              candidatePts = [
+                {x:d[0], y:d[1]},
+                {x:d[2], y:d[3]},
+                {x:d[4], y:d[5]},
+                {x:d[6], y:d[7]}
+              ];
+            }else{
+              const rr = cv.minAreaRect(cnt);
+              const v = cv.RotatedRect.points(rr);
+              candidatePts = [
+                {x:v[0].x, y:v[0].y},
+                {x:v[1].x, y:v[1].y},
+                {x:v[2].x, y:v[2].y},
+                {x:v[3].x, y:v[3].y}
+              ];
+            }
+          } finally {
+            approx.delete();
+          }
+
+          if(!candidatePts) continue;
+
+          candidatePts = orderPointsClockwise(candidatePts);
+          const area2 = polygonArea(candidatePts);
+          const s = sideStats(candidatePts);
+
+          if(s.avgW < 55 || s.avgH < 80) continue;
+
+          const ratio = Math.max(s.avgW, s.avgH) / Math.max(1, Math.min(s.avgW, s.avgH));
+          if(ratio < 1.15 || ratio > 1.72) continue;
+
+          const frameArea = src.cols * src.rows;
+          const areaRatio = area2 / frameArea;
+          if(areaRatio < 0.008 || areaRatio > 0.68) continue;
+
+          let score = rectScore(candidatePts, area2, src.cols, src.rows);
+
+          if(lastGoodQuad){
+            score += Math.min(900, quadSimilarity(lastGoodQuad, candidatePts) * 0.55);
+          }
+
+          if(score < bestScore){
+            bestScore = score;
+            bestPts = candidatePts;
+          }
+        } finally {
+          cnt.delete();
+        }
+      }
+
+      return bestPts;
+    } finally {
+      gray.delete();
+      blur.delete();
+      edges.delete();
+      contours.delete();
+      hierarchy.delete();
+    }
+  }
+
+  function drawDebugQuad(pts){
+    if(!pts) return;
+    outCtx.save();
+    outCtx.lineWidth = 2;
+    outCtx.strokeStyle = 'rgba(255,216,79,.95)';
+    outCtx.beginPath();
+    outCtx.moveTo(pts[0].x, pts[0].y);
+    for(let i=1;i<pts.length;i++) outCtx.lineTo(pts[i].x, pts[i].y);
+    outCtx.closePath();
+    outCtx.stroke();
+    outCtx.restore();
+  }
+
+  function renderFrame(){
+    if(!cvReady || !video.videoWidth || !video.videoHeight){
+      animationHandle = requestAnimationFrame(renderFrame);
+      return;
+    }
+    if(processing){
+      animationHandle = requestAnimationFrame(renderFrame);
+      return;
+    }
+    processing = true;
+
+    try{
+      output.width = video.videoWidth;
+      output.height = video.videoHeight;
+      offCanvas.width = video.videoWidth;
+      offCanvas.height = video.videoHeight;
+
+      offCtx.drawImage(video, 0, 0, offCanvas.width, offCanvas.height);
+      outCtx.clearRect(0,0,output.width,output.height);
+      outCtx.drawImage(video, 0, 0, output.width, output.height);
+
+      const src = cv.imread(offCanvas);
+      try{
+        let quad = detectCardQuad(src);
+
+        if(quad){
+          lastGoodQuad = quad.map(p => ({x:p.x, y:p.y}));
+          lostFrames = 0;
+
+          // 平滑
+          stableQuad = blendPoints(stableQuad, quad, stableQuad ? 0.22 : 1.0);
+
+          if(cardImg.complete && cardImg.naturalWidth > 0 && overlayEnabled){
+            let drawPts = stableQuad.map(p => ({x:p.x,y:p.y}));
+            drawPts = ensureAspectMatch(drawPts, cardImg.naturalWidth, cardImg.naturalHeight);
+
+            // 讓疊圖不要大於真牌
+            drawPts = expandQuad(drawPts, 0.985);
+
+            const cardMat = cv.imread(cardImg);
+            const srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
+              0, 0,
+              cardMat.cols, 0,
+              cardMat.cols, cardMat.rows,
+              0, cardMat.rows
+            ]);
+
+            const dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
+              drawPts[0].x, drawPts[0].y,
+              drawPts[1].x, drawPts[1].y,
+              drawPts[2].x, drawPts[2].y,
+              drawPts[3].x, drawPts[3].y
+            ]);
+
+            const M = cv.getPerspectiveTransform(srcPts, dstPts);
+            const warped = new cv.Mat();
+            try{
+              cv.warpPerspective(cardMat, warped, M, new cv.Size(src.cols, src.rows), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+              cv.addWeighted(src, 1.0, warped, fadeAlpha, 0, src);
+              cv.imshow(output, src);
+            } finally {
+              warped.delete();
+              M.delete();
+              srcPts.delete();
+              dstPts.delete();
+              cardMat.delete();
+            }
+          }
+
+          setStatus(facingMode === 'user' ? '前鏡頭・已鎖定' : '後鏡頭・已鎖定');
+        }else{
+          lostFrames++;
+          if(lostFrames <= 10 && stableQuad){
+            // 短暫丟失時保留上一個位置
+            if(cardImg.complete && cardImg.naturalWidth > 0 && overlayEnabled){
+              let drawPts = stableQuad.map(p => ({x:p.x,y:p.y}));
+              drawPts = ensureAspectMatch(drawPts, cardImg.naturalWidth, cardImg.naturalHeight);
+              drawPts = expandQuad(drawPts, 0.985);
+
+              const cardMat = cv.imread(cardImg);
+              const srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                0, 0,
+                cardMat.cols, 0,
+                cardMat.cols, cardMat.rows,
+                0, cardMat.rows
+              ]);
+              const dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
+                drawPts[0].x, drawPts[0].y,
+                drawPts[1].x, drawPts[1].y,
+                drawPts[2].x, drawPts[2].y,
+                drawPts[3].x, drawPts[3].y
+              ]);
+              const M = cv.getPerspectiveTransform(srcPts, dstPts);
+              const warped = new cv.Mat();
+              try{
+                cv.warpPerspective(cardMat, warped, M, new cv.Size(src.cols, src.rows), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+                cv.addWeighted(src, 1.0, warped, fadeAlpha, 0, src);
+                cv.imshow(output, src);
+              } finally {
+                warped.delete();
+                M.delete();
+                srcPts.delete();
+                dstPts.delete();
+                cardMat.delete();
+              }
+            }
+            setStatus(facingMode === 'user' ? '前鏡頭・保持中' : '後鏡頭・保持中');
+          }else{
+            stableQuad = null;
+            lastGoodQuad = null;
+            setStatus(facingMode === 'user' ? '前鏡頭・搜尋中' : '後鏡頭・搜尋中');
+          }
+        }
+      } finally {
+        src.delete();
+      }
+    }catch(err){
+      console.error('影像處理錯誤:', err);
+      setStatus('影像處理錯誤');
+    } finally {
+      processing = false;
+      animationHandle = requestAnimationFrame(renderFrame);
+    }
+  }
+
+  async function waitForOpenCV(){
+    return new Promise((resolve) => {
+      const check = () => {
+        if(window.cv && cv.Mat){
+          resolve();
+        }else{
+          setTimeout(check, 80);
+        }
+      };
+      check();
+    });
+  }
+
+  output.addEventListener('click', () => {
+    fadeAlpha = Math.max(0, fadeAlpha - 0.18);
+  });
+
+  shutterBtn.addEventListener('click', () => {
+    fadeAlpha = 1.0;
+    overlayEnabled = true;
+    flashScreen();
+    resetTracking(false);
+  });
+
+  switchBtn.addEventListener('click', async () => {
+    facingMode = facingMode === 'environment' ? 'user' : 'environment';
+    await startCamera();
+  });
+
+  cardImg.onload = () => {
+    thumbPreview.src = cardImg.src;
+  };
+
+  document.addEventListener('visibilitychange', async () => {
+    if(document.hidden){
+      if(animationHandle) cancelAnimationFrame(animationHandle);
+      animationHandle = null;
+    }else{
+      if(!animationHandle) renderFrame();
+    }
+  });
+
+  (async () => {
+    await waitForOpenCV();
+    cvReady = true;
+    await startCamera();
+    renderFrame();
+  })();
+})();
+</script>
+</body>
+</html>
