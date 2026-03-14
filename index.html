@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
-  <title>MindAR Card Target Prototype v2</title>
+  <title>MindAR Card Target Prototype v3</title>
 
   <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
@@ -23,19 +23,12 @@
       font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
       color:#fff;
     }
-    body{position:relative}
 
-    /* 關鍵：讓 A-Frame 場景與 canvas 背景透明 */
+    /* 只讓 scene 全畫面，不再硬改 canvas/video 背景 */
     a-scene{
       position:fixed !important;
       inset:0 !important;
-      background:transparent !important;
-    }
-    .a-canvas{
-      background:transparent !important;
-    }
-    canvas, video{
-      background:transparent !important;
+      z-index:1;
     }
 
     .overlay-ui{
@@ -129,11 +122,13 @@
     }
     #switchCamera svg{width:32px;height:32px}
     #switchCamera:active,#shutter:active{transform:scale(.96)}
+
     .loader{
       position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
       background:rgba(0,0,0,.85); z-index:40; color:white; font-size:16px;
     }
     .loader.hidden{display:none}
+
     @media (max-height: 740px){
       .topFade{min-height:72px}
       .bottomFade{min-height:150px;height:25vh}
@@ -153,11 +148,10 @@
   <a-scene
     mindar-image="imageTargetSrc: ./targets.mind; uiScanning: no; uiLoading: no; uiError: no; warmupTolerance: 2; missTolerance: 10; filterMinCF: 0.001; filterBeta: 10"
     color-space="sRGB"
-    renderer="colorManagement: true; physicallyCorrectLights: false; alpha: true"
+    renderer="colorManagement: true; physicallyCorrectLights: false"
     vr-mode-ui="enabled: false"
     device-orientation-permission-ui="enabled: false"
     embedded
-    background="color: transparent"
   >
     <a-assets>
       <img id="overlay-card" src="./card.png" />
@@ -188,7 +182,7 @@
     <div class="bottomFade"></div>
 
     <div class="statusDot" id="statusDot"></div>
-    <div class="hint" id="hint">請先用編譯好的 targets.mind 與對應牌面測試</div>
+    <div class="hint" id="hint">請把對應牌面放到鏡頭中央</div>
 
     <div class="bottomUI">
       <div class="modeRow">
