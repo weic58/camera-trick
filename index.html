@@ -3,11 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
-  <title>MindAR Card Target Prototype v3</title>
-
-  <script src="https://aframe.io/releases/1.5.0/aframe.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-aframe.prod.js"></script>
-
+  <title>MindAR Three Card Prototype</title>
   <style>
     :root{
       --ui-soft: rgba(255,255,255,.8);
@@ -23,12 +19,14 @@
       font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
       color:#fff;
     }
+    body{position:relative}
 
-    /* 只讓 scene 全畫面，不再硬改 canvas/video 背景 */
-    a-scene{
-      position:fixed !important;
-      inset:0 !important;
+    #ar-container{
+      position:fixed;
+      inset:0;
       z-index:1;
+      overflow:hidden;
+      background:#000;
     }
 
     .overlay-ui{
@@ -73,6 +71,10 @@
       background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.1);
       color:rgba(255,255,255,.92); font-size:14px;
       backdrop-filter:blur(8px);
+      white-space:nowrap;
+      max-width:80vw;
+      overflow:hidden;
+      text-overflow:ellipsis;
     }
 
     .bottomUI{
@@ -144,32 +146,7 @@
 </head>
 <body>
   <div id="loader" class="loader">載入中…請把目標牌面拿到鏡頭前</div>
-
-  <a-scene
-    mindar-image="imageTargetSrc: ./targets.mind; uiScanning: no; uiLoading: no; uiError: no; warmupTolerance: 2; missTolerance: 10; filterMinCF: 0.001; filterBeta: 10"
-    color-space="sRGB"
-    renderer="colorManagement: true; physicallyCorrectLights: false"
-    vr-mode-ui="enabled: false"
-    device-orientation-permission-ui="enabled: false"
-    embedded
-  >
-    <a-assets>
-      <img id="overlay-card" src="./card.png" />
-    </a-assets>
-
-    <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
-    <a-entity id="target" mindar-image-target="targetIndex: 0">
-      <a-plane
-        id="card-plane"
-        src="#overlay-card"
-        position="0 0 0.01"
-        width="1"
-        height="1.3968"
-        material="transparent: true; opacity: 1; shader: flat; side: double"
-      ></a-plane>
-    </a-entity>
-  </a-scene>
+  <div id="ar-container"></div>
 
   <div class="overlay-ui">
     <div class="gridline v1"></div>
@@ -211,78 +188,110 @@
     </div>
   </div>
 
-  <script>
-    (() => {
-      const statusDot = document.getElementById('statusDot');
-      const hint = document.getElementById('hint');
-      const loader = document.getElementById('loader');
-      const shutter = document.getElementById('shutter');
-      const switchCamera = document.getElementById('switchCamera');
-      const target = document.getElementById('target');
-      const plane = document.getElementById('card-plane');
-      const sceneEl = document.querySelector('a-scene');
+  <script type="module">
+    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.module.js";
+    import { MindARThree } from "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js";
 
-      let fadeAlpha = 1;
-      let fadeAnimating = false;
-      let fadeStart = 0;
-      const fadeDuration = 180;
+    const loader = document.getElementById("loader");
+    const statusDot = document.getElementById("statusDot");
+    const hint = document.getElementById("hint");
+    const shutter = document.getElementById("shutter");
+    const switchCamera = document.getElementById("switchCamera");
+    const container = document.getElementById("ar-container");
 
-      function setFound(found){
-        statusDot.style.background = found ? '#44d16b' : '#ff4d4d';
-        statusDot.style.boxShadow = found
-          ? '0 0 8px rgba(68,209,107,.65)'
-          : '0 0 8px rgba(255,77,77,.55)';
-        hint.textContent = found ? '已抓到 target image' : '請把對應牌面放到鏡頭中央';
-      }
+    let fadeAlpha = 1;
+    let fadeAnimating = false;
+    let fadeStart = 0;
+    const fadeDuration = 180;
 
-      function updateFade(now){
-        if(!fadeAnimating) return;
-        const t = Math.min(1, (now - fadeStart) / fadeDuration);
-        fadeAlpha = 1 - t;
-        if(t >= 1){
-          fadeAlpha = 0;
-          fadeAnimating = false;
-        }
-        plane.setAttribute('material', 'opacity', fadeAlpha);
-      }
+    function setFound(found){
+      statusDot.style.background = found ? "#44d16b" : "#ff4d4d";
+      statusDot.style.boxShadow = found
+        ? "0 0 8px rgba(68,209,107,.65)"
+        : "0 0 8px rgba(255,77,77,.55)";
+      hint.textContent = found ? "已抓到 target image" : "請把對應牌面放到鏡頭中央";
+    }
 
-      function loop(now){
-        updateFade(now);
-        requestAnimationFrame(loop);
-      }
+    const mindarThree = new MindARThree({
+      container,
+      imageTargetSrc: "./targets.mind",
+      uiLoading: "no",
+      uiScanning: "no",
+      uiError: "no",
+      filterMinCF: 0.001,
+      filterBeta: 10,
+      warmupTolerance: 2,
+      missTolerance: 10,
+    });
 
-      sceneEl.addEventListener('loaded', () => {
-        loader.classList.add('hidden');
-      });
+    const {renderer, scene, camera} = mindarThree;
 
-      target.addEventListener('targetFound', () => {
-        setFound(true);
-      });
+    renderer.setClearColor(0x000000, 0); // transparent
+    renderer.setPixelRatio(window.devicePixelRatio);
 
-      target.addEventListener('targetLost', () => {
-        setFound(false);
-      });
+    const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+    scene.add(light);
 
-      shutter.addEventListener('click', () => {
-        fadeAlpha = 1;
+    const anchor = mindarThree.addAnchor(0);
+
+    const textureLoader = new THREE.TextureLoader();
+    const texture = textureLoader.load("./card.png");
+    const geometry = new THREE.PlaneGeometry(1, 1.3968);
+    const material = new THREE.MeshBasicMaterial({
+      map: texture,
+      transparent: true,
+      opacity: 1,
+      side: THREE.DoubleSide,
+      depthWrite: false
+    });
+    const plane = new THREE.Mesh(geometry, material);
+    plane.position.z = 0.01;
+    anchor.group.add(plane);
+
+    anchor.onTargetFound = () => setFound(true);
+    anchor.onTargetLost = () => setFound(false);
+
+    function updateFade(now){
+      if(!fadeAnimating) return;
+      const t = Math.min(1, (now - fadeStart) / fadeDuration);
+      fadeAlpha = 1 - t;
+      if(t >= 1){
+        fadeAlpha = 0;
         fadeAnimating = false;
-        plane.setAttribute('material', 'opacity', 1);
-      });
+      }
+      material.opacity = fadeAlpha;
+    }
 
-      document.body.addEventListener('click', (e) => {
-        const isButton = e.target.closest('#shutter') || e.target.closest('#switchCamera');
-        if(isButton) return;
-        fadeAnimating = true;
-        fadeStart = performance.now();
-      });
+    shutter.addEventListener("click", () => {
+      fadeAlpha = 1;
+      fadeAnimating = false;
+      material.opacity = 1;
+    });
 
-      switchCamera.addEventListener('click', () => {
-        hint.textContent = '這版先專注驗證 image target 追蹤穩定度';
-      });
+    document.body.addEventListener("click", (e) => {
+      const isButton = e.target.closest("#shutter") || e.target.closest("#switchCamera");
+      if(isButton) return;
+      fadeAnimating = true;
+      fadeStart = performance.now();
+    });
 
-      setFound(false);
-      requestAnimationFrame(loop);
-    })();
+    switchCamera.addEventListener("click", () => {
+      hint.textContent = "Three 版先專注驗證 target image 追蹤穩定度";
+    });
+
+    setFound(false);
+
+    try{
+      await mindarThree.start();
+      loader.classList.add("hidden");
+      renderer.setAnimationLoop(() => {
+        updateFade(performance.now());
+        renderer.render(scene, camera);
+      });
+    } catch (err) {
+      console.error(err);
+      loader.textContent = "啟動失敗，請確認 targets.mind、card.png 與相機權限";
+    }
   </script>
 </body>
 </html>
