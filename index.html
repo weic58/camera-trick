@@ -253,7 +253,9 @@
 
       const textureLoader = new THREE.TextureLoader();
       const texture = textureLoader.load("./card.png");
-      const geometry = new THREE.PlaneGeometry(1, 1.3968);
+      const CARD_W = 0.84;
+      const CARD_H = CARD_W * 88 / 63;
+      const geometry = new THREE.PlaneGeometry(CARD_W, CARD_H);
       const material = new THREE.MeshBasicMaterial({
         map: texture,
         transparent: true,
