@@ -3,7 +3,18 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
-  <title>MindAR Three Card Prototype</title>
+  <title>MindAR Three Card Prototype v3</title>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+      "mindar-image-three": "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js"
+    }
+  }
+  </script>
+
   <style>
     :root{
       --ui-soft: rgba(255,255,255,.8);
@@ -20,7 +31,6 @@
       color:#fff;
     }
     body{position:relative}
-
     #ar-container{
       position:fixed;
       inset:0;
@@ -128,6 +138,7 @@
     .loader{
       position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
       background:rgba(0,0,0,.85); z-index:40; color:white; font-size:16px;
+      text-align:center; padding:24px;
     }
     .loader.hidden{display:none}
 
@@ -145,7 +156,7 @@
   </style>
 </head>
 <body>
-  <div id="loader" class="loader">載入中…請把目標牌面拿到鏡頭前</div>
+  <div id="loader" class="loader">載入中…<br>請用 http:// 或 https:// 開啟，不要用 file://</div>
   <div id="ar-container"></div>
 
   <div class="overlay-ui">
@@ -189,8 +200,8 @@
   </div>
 
   <script type="module">
-    import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.136.0/build/three.module.js";
-    import { MindARThree } from "https://cdn.jsdelivr.net/npm/mind-ar@1.2.5/dist/mindar-image-three.prod.js";
+    import * as THREE from "three";
+    import { MindARThree } from "mindar-image-three";
 
     const loader = document.getElementById("loader");
     const statusDot = document.getElementById("statusDot");
@@ -212,85 +223,92 @@
       hint.textContent = found ? "已抓到 target image" : "請把對應牌面放到鏡頭中央";
     }
 
-    const mindarThree = new MindARThree({
-      container,
-      imageTargetSrc: "./targets.mind",
-      uiLoading: "no",
-      uiScanning: "no",
-      uiError: "no",
-      filterMinCF: 0.001,
-      filterBeta: 10,
-      warmupTolerance: 2,
-      missTolerance: 10,
-    });
-
-    const {renderer, scene, camera} = mindarThree;
-
-    renderer.setClearColor(0x000000, 0); // transparent
-    renderer.setPixelRatio(window.devicePixelRatio);
-
-    const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-    scene.add(light);
-
-    const anchor = mindarThree.addAnchor(0);
-
-    const textureLoader = new THREE.TextureLoader();
-    const texture = textureLoader.load("./card.png");
-    const geometry = new THREE.PlaneGeometry(1, 1.3968);
-    const material = new THREE.MeshBasicMaterial({
-      map: texture,
-      transparent: true,
-      opacity: 1,
-      side: THREE.DoubleSide,
-      depthWrite: false
-    });
-    const plane = new THREE.Mesh(geometry, material);
-    plane.position.z = 0.01;
-    anchor.group.add(plane);
-
-    anchor.onTargetFound = () => setFound(true);
-    anchor.onTargetLost = () => setFound(false);
-
-    function updateFade(now){
-      if(!fadeAnimating) return;
-      const t = Math.min(1, (now - fadeStart) / fadeDuration);
-      fadeAlpha = 1 - t;
-      if(t >= 1){
-        fadeAlpha = 0;
-        fadeAnimating = false;
-      }
-      material.opacity = fadeAlpha;
+    if (location.protocol === "file:") {
+      loader.innerHTML = "請不要用 file:// 開啟<br>請改用 GitHub Pages、Live Server 或 http://localhost";
+      throw new Error("MindARThree 需要 http/https，不支援 file://");
     }
 
-    shutter.addEventListener("click", () => {
-      fadeAlpha = 1;
-      fadeAnimating = false;
-      material.opacity = 1;
-    });
+    try {
+      const mindarThree = new MindARThree({
+        container,
+        imageTargetSrc: "./targets.mind",
+        uiLoading: "no",
+        uiScanning: "no",
+        uiError: "no",
+        filterMinCF: 0.001,
+        filterBeta: 10,
+        warmupTolerance: 2,
+        missTolerance: 10,
+      });
 
-    document.body.addEventListener("click", (e) => {
-      const isButton = e.target.closest("#shutter") || e.target.closest("#switchCamera");
-      if(isButton) return;
-      fadeAnimating = true;
-      fadeStart = performance.now();
-    });
+      const {renderer, scene, camera} = mindarThree;
 
-    switchCamera.addEventListener("click", () => {
-      hint.textContent = "Three 版先專注驗證 target image 追蹤穩定度";
-    });
+      renderer.setClearColor(0x000000, 0);
+      renderer.setPixelRatio(window.devicePixelRatio);
 
-    setFound(false);
+      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+      scene.add(light);
 
-    try{
+      const anchor = mindarThree.addAnchor(0);
+
+      const textureLoader = new THREE.TextureLoader();
+      const texture = textureLoader.load("./card.png");
+      const geometry = new THREE.PlaneGeometry(1, 1.3968);
+      const material = new THREE.MeshBasicMaterial({
+        map: texture,
+        transparent: true,
+        opacity: 1,
+        side: THREE.DoubleSide,
+        depthWrite: false
+      });
+      const plane = new THREE.Mesh(geometry, material);
+      plane.position.z = 0.01;
+      anchor.group.add(plane);
+
+      anchor.onTargetFound = () => setFound(true);
+      anchor.onTargetLost = () => setFound(false);
+
+      function updateFade(now){
+        if(!fadeAnimating) return;
+        const t = Math.min(1, (now - fadeStart) / fadeDuration);
+        fadeAlpha = 1 - t;
+        if(t >= 1){
+          fadeAlpha = 0;
+          fadeAnimating = false;
+        }
+        material.opacity = fadeAlpha;
+      }
+
+      shutter.addEventListener("click", () => {
+        fadeAlpha = 1;
+        fadeAnimating = false;
+        material.opacity = 1;
+      });
+
+      document.body.addEventListener("click", (e) => {
+        const isButton = e.target.closest("#shutter") || e.target.closest("#switchCamera");
+        if(isButton) return;
+        fadeAnimating = true;
+        fadeStart = performance.now();
+      });
+
+      switchCamera.addEventListener("click", () => {
+        hint.textContent = "這版先專注驗證 target image 追蹤穩定度";
+      });
+
+      setFound(false);
+
       await mindarThree.start();
       loader.classList.add("hidden");
+
       renderer.setAnimationLoop(() => {
         updateFade(performance.now());
         renderer.render(scene, camera);
       });
     } catch (err) {
       console.error(err);
-      loader.textContent = "啟動失敗，請確認 targets.mind、card.png 與相機權限";
+      loader.innerHTML = "啟動失敗<br>請確認 targets.mind、card.png、相機權限，以及用 http/https 開啟";
+      hint.textContent = "初始化失敗，請看 Console";
     }
   </script>
 </body>
