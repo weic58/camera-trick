@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
-  <title>MindAR Three Card Prototype v3</title>
+  <title>MindAR Three Card Prototype v5</title>
 
   <script type="importmap">
   {
@@ -74,19 +74,6 @@
       border:1px solid rgba(255,255,255,.28);
     }
 
-    .hint{
-      position:absolute; left:50%; top:calc(var(--top-safe) + 26px);
-      transform:translateX(-50%);
-      padding:8px 12px; border-radius:12px;
-      background:rgba(0,0,0,.35); border:1px solid rgba(255,255,255,.1);
-      color:rgba(255,255,255,.92); font-size:14px;
-      backdrop-filter:blur(8px);
-      white-space:nowrap;
-      max-width:80vw;
-      overflow:hidden;
-      text-overflow:ellipsis;
-    }
-
     .bottomUI{
       position:absolute;left:0;right:0;bottom:0;
       padding:0 18px calc(var(--bottom-safe) + 8px);
@@ -135,45 +122,6 @@
     #switchCamera svg{width:32px;height:32px}
     #switchCamera:active,#shutter:active{transform:scale(.96)}
 
-    .controlPanel{
-      position:absolute;
-      right:14px;
-      top:calc(var(--top-safe) + 24px);
-      z-index:21;
-      pointer-events:auto;
-      width:min(280px, 42vw);
-      padding:12px 12px 10px;
-      border-radius:14px;
-      background:rgba(0,0,0,.38);
-      border:1px solid rgba(255,255,255,.12);
-      backdrop-filter:blur(10px);
-      color:#fff;
-      font-size:13px;
-    }
-    .controlPanel.hidden{display:none}
-    .controlTitle{
-      font-size:13px;
-      font-weight:700;
-      margin-bottom:8px;
-    }
-    .controlRow{margin-bottom:10px}
-    .controlRow label{
-      display:flex; justify-content:space-between; gap:8px;
-      margin-bottom:4px; color:rgba(255,255,255,.9);
-    }
-    .controlRow input[type="range"]{
-      width:100%;
-    }
-    .controlButtons{
-      display:flex; gap:8px; margin-top:4px;
-    }
-    .controlButtons button{
-      pointer-events:auto;
-      border:none; outline:none; cursor:pointer;
-      border-radius:10px; padding:8px 10px;
-      background:rgba(255,255,255,.12);
-      color:#fff;
-    }
     .loader{
       position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
       background:rgba(0,0,0,.85); z-index:40; color:white; font-size:16px;
@@ -190,11 +138,6 @@
       .thumb{width:48px;height:48px}
       #shutter{width:74px;height:74px;box-shadow:0 0 0 5px rgba(255,255,255,.26), inset 0 0 0 2px rgba(0,0,0,.05)}
       #switchCamera{width:50px;height:50px}
-      .hint{font-size:13px}
-      .controlPanel{
-        width:min(240px, 48vw);
-        padding:10px;
-      }
     }
   </style>
 </head>
@@ -213,23 +156,6 @@
     <div class="bottomFade"></div>
 
     <div class="statusDot" id="statusDot"></div>
-    <div class="hint" id="hint">請把對應牌面放到鏡頭中央</div>
-    <div class="controlPanel" id="controlPanel">
-      <div class="controlTitle">疊圖調整</div>
-      <div class="controlRow">
-        <label><span>寬度</span><span id="widthValue">1.40</span></label>
-        <input id="widthSlider" type="range" min="0.40" max="2.20" step="0.01" value="1.40">
-      </div>
-      <div class="controlRow">
-        <label><span>高度</span><span id="heightValue">1.00</span></label>
-        <input id="heightSlider" type="range" min="0.40" max="2.20" step="0.01" value="1.00">
-      </div>
-      <div class="controlButtons">
-        <button id="presetLandscape" type="button">88:63</button>
-        <button id="presetPortrait" type="button">63:88</button>
-        <button id="presetSquare" type="button">1:1</button>
-      </div>
-    </div>
 
     <div class="bottomUI">
       <div class="modeRow">
@@ -264,29 +190,30 @@
 
     const loader = document.getElementById("loader");
     const statusDot = document.getElementById("statusDot");
-    const hint = document.getElementById("hint");
     const shutter = document.getElementById("shutter");
     const switchCamera = document.getElementById("switchCamera");
     const container = document.getElementById("ar-container");
-    const widthSlider = document.getElementById("widthSlider");
-    const heightSlider = document.getElementById("heightSlider");
-    const widthValue = document.getElementById("widthValue");
-    const heightValue = document.getElementById("heightValue");
-    const presetLandscape = document.getElementById("presetLandscape");
-    const presetPortrait = document.getElementById("presetPortrait");
-    const presetSquare = document.getElementById("presetSquare");
 
     let fadeAlpha = 1;
     let fadeAnimating = false;
     let fadeStart = 0;
     const fadeDuration = 180;
 
+    let mindarThree = null;
+    let renderer = null;
+    let scene = null;
+    let camera = null;
+    let material = null;
+    let currentFacingFront = false;
+
+    const CARD_W = 1.11;
+    const CARD_H = 0.79;
+
     function setFound(found){
       statusDot.style.background = found ? "#44d16b" : "#ff4d4d";
       statusDot.style.boxShadow = found
         ? "0 0 8px rgba(68,209,107,.65)"
         : "0 0 8px rgba(255,77,77,.55)";
-      hint.textContent = found ? "已抓到 target image" : "請把對應牌面放到鏡頭中央";
     }
 
     if (location.protocol === "file:") {
@@ -294,129 +221,203 @@
       throw new Error("MindARThree 需要 http/https，不支援 file://");
     }
 
-    try {
-      const mindarThree = new MindARThree({
-        container,
-        imageTargetSrc: "./targets.mind",
-        uiLoading: "no",
-        uiScanning: "no",
-        uiError: "no",
-        filterMinCF: 0.001,
-        filterBeta: 10,
-        warmupTolerance: 2,
-        missTolerance: 10,
-      });
+    const loadImage = (src) => new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+      img.src = src;
+    });
 
-      const {renderer, scene, camera} = mindarThree;
+    async function buildCardTexture() {
+      const img = await loadImage("./card.png");
+      const cw = 1400;
+      const ch = Math.round(cw * img.height / img.width); // keep source aspect
+      const canvas = document.createElement("canvas");
+      canvas.width = cw;
+      canvas.height = ch;
+      const ctx = canvas.getContext("2d");
 
-      renderer.setClearColor(0x000000, 0);
-      renderer.setPixelRatio(window.devicePixelRatio);
+      const radius = Math.round(ch * 0.07);
+      const border = Math.round(ch * 0.04);
+      const innerX = border;
+      const innerY = border;
+      const innerW = cw - border * 2;
+      const innerH = ch - border * 2;
 
-      const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-      scene.add(light);
+      // white rounded border background
+      roundedRect(ctx, 0, 0, cw, ch, radius);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
 
-      const anchor = mindarThree.addAnchor(0);
+      // clip image into rounded rect inset to create border
+      ctx.save();
+      roundedRect(ctx, innerX, innerY, innerW, innerH, Math.max(8, radius - border*0.6));
+      ctx.clip();
+      ctx.drawImage(img, innerX, innerY, innerW, innerH);
+      ctx.restore();
 
-      const textureLoader = new THREE.TextureLoader();
-      const texture = textureLoader.load("./card.png");
-      let planeWidth = 1.40;
-      let planeHeight = 1.00;
-
-      const material = new THREE.MeshBasicMaterial({
-        map: texture,
-        transparent: true,
-        opacity: 1,
-        side: THREE.DoubleSide,
-        depthWrite: false
-      });
-      const plane = new THREE.Mesh(new THREE.PlaneGeometry(planeWidth, planeHeight), material);
-
-      const updateGeometry = () => {
-        plane.geometry.dispose();
-        plane.geometry = new THREE.PlaneGeometry(planeWidth, planeHeight);
-        widthSlider.value = planeWidth.toFixed(2);
-        heightSlider.value = planeHeight.toFixed(2);
-        widthValue.textContent = planeWidth.toFixed(2);
-        heightValue.textContent = planeHeight.toFixed(2);
-      };
-      plane.position.z = 0.01;
-      anchor.group.add(plane);
-
-      anchor.onTargetFound = () => setFound(true);
-      anchor.onTargetLost = () => setFound(false);
-
-      function updateFade(now){
-        if(!fadeAnimating) return;
-        const t = Math.min(1, (now - fadeStart) / fadeDuration);
-        fadeAlpha = 1 - t;
-        if(t >= 1){
-          fadeAlpha = 0;
-          fadeAnimating = false;
-        }
-        material.opacity = fadeAlpha;
-      }
-
-      shutter.addEventListener("click", () => {
-        fadeAlpha = 1;
-        fadeAnimating = false;
-        material.opacity = 1;
-      });
-
-      document.body.addEventListener("click", (e) => {
-        const isButton = e.target.closest("#shutter") || e.target.closest("#switchCamera");
-        if(isButton) return;
-        fadeAnimating = true;
-        fadeStart = performance.now();
-      });
-
-      switchCamera.addEventListener("click", () => {
-        hint.textContent = "這版先專注驗證 target image 追蹤穩定度";
-      });
-
-      widthSlider.addEventListener("input", () => {
-        planeWidth = parseFloat(widthSlider.value);
-        updateGeometry();
-      });
-
-      heightSlider.addEventListener("input", () => {
-        planeHeight = parseFloat(heightSlider.value);
-        updateGeometry();
-      });
-
-      presetLandscape.addEventListener("click", () => {
-        planeHeight = 1.00;
-        planeWidth = 88 / 63;
-        updateGeometry();
-      });
-
-      presetPortrait.addEventListener("click", () => {
-        planeWidth = 1.00;
-        planeHeight = 88 / 63;
-        updateGeometry();
-      });
-
-      presetSquare.addEventListener("click", () => {
-        planeWidth = 1.00;
-        planeHeight = 1.00;
-        updateGeometry();
-      });
-
-      updateGeometry();
-
-      setFound(false);
-
-      await mindarThree.start();
-      loader.classList.add("hidden");
-
-      renderer.setAnimationLoop(() => {
-        updateFade(performance.now());
-        renderer.render(scene, camera);
-      });
-    } catch (err) {
-      console.error(err);
-      loader.innerHTML = "啟動失敗<br>請確認 targets.mind、card.png、相機權限，以及用 http/https 開啟";
-      hint.textContent = "初始化失敗，請看 Console";
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.needsUpdate = true;
+      return texture;
     }
+
+    function buildShadowTexture() {
+      const cw = 1024, ch = 728;
+      const canvas = document.createElement("canvas");
+      canvas.width = cw;
+      canvas.height = ch;
+      const ctx = canvas.getContext("2d");
+
+      ctx.clearRect(0,0,cw,ch);
+      ctx.filter = "blur(28px)";
+      ctx.fillStyle = "rgba(0,0,0,0.38)";
+      roundedRect(ctx, 70, 70, cw-140, ch-140, 54);
+      ctx.fill();
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    function roundedRect(ctx, x, y, w, h, r) {
+      const rr = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.lineTo(x + w - rr, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+      ctx.lineTo(x + w, y + h - rr);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+      ctx.lineTo(x + rr, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+      ctx.lineTo(x, y + rr);
+      ctx.quadraticCurveTo(x, y, x + rr, y);
+      ctx.closePath();
+    }
+
+    function updateFade(now){
+      if(!fadeAnimating || !material) return;
+      const t = Math.min(1, (now - fadeStart) / fadeDuration);
+      fadeAlpha = 1 - t;
+      if(t >= 1){
+        fadeAlpha = 0;
+        fadeAnimating = false;
+      }
+      material.opacity = fadeAlpha;
+    }
+
+    async function stopCurrent() {
+      if (mindarThree) {
+        try {
+          renderer?.setAnimationLoop(null);
+          await mindarThree.stop();
+        } catch (e) {
+          console.warn(e);
+        }
+      }
+      container.innerHTML = "";
+      mindarThree = null;
+      renderer = null;
+      scene = null;
+      camera = null;
+      material = null;
+      setFound(false);
+    }
+
+    async function startAR() {
+      loader.classList.remove("hidden");
+      await stopCurrent();
+
+      try {
+        mindarThree = new MindARThree({
+          container,
+          imageTargetSrc: "./targets.mind",
+          uiLoading: "no",
+          uiScanning: "no",
+          uiError: "no",
+          filterMinCF: 0.001,
+          filterBeta: 10,
+          warmupTolerance: 2,
+          missTolerance: 10,
+          shouldFaceUser: currentFacingFront // best-effort toggle
+        });
+
+        ({renderer, scene, camera} = mindarThree);
+
+        renderer.setClearColor(0x000000, 0);
+        renderer.setPixelRatio(window.devicePixelRatio);
+
+        const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
+        scene.add(light);
+
+        const anchor = mindarThree.addAnchor(0);
+
+        const cardTexture = await buildCardTexture();
+        const shadowTexture = buildShadowTexture();
+
+        const shadowMat = new THREE.MeshBasicMaterial({
+          map: shadowTexture,
+          transparent: true,
+          opacity: 0.34,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        const shadowPlane = new THREE.Mesh(
+          new THREE.PlaneGeometry(CARD_W * 1.05, CARD_H * 1.05),
+          shadowMat
+        );
+        shadowPlane.position.set(0.015, -0.015, -0.01);
+        anchor.group.add(shadowPlane);
+
+        const geometry = new THREE.PlaneGeometry(CARD_W, CARD_H);
+        material = new THREE.MeshBasicMaterial({
+          map: cardTexture,
+          transparent: true,
+          opacity: 1,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        const plane = new THREE.Mesh(geometry, material);
+        plane.position.z = 0.01;
+        anchor.group.add(plane);
+
+        anchor.onTargetFound = () => setFound(true);
+        anchor.onTargetLost = () => setFound(false);
+
+        await mindarThree.start();
+        loader.classList.add("hidden");
+
+        renderer.setAnimationLoop(() => {
+          updateFade(performance.now());
+          renderer.render(scene, camera);
+        });
+      } catch (err) {
+        console.error(err);
+        loader.innerHTML = "啟動失敗<br>請確認 targets.mind、card.png、相機權限，以及用 http/https 開啟";
+      }
+    }
+
+    shutter.addEventListener("click", () => {
+      fadeAlpha = 1;
+      fadeAnimating = false;
+      if (material) material.opacity = 1;
+    });
+
+    document.body.addEventListener("click", (e) => {
+      const isButton = e.target.closest("#shutter") || e.target.closest("#switchCamera");
+      if(isButton) return;
+      fadeAnimating = true;
+      fadeStart = performance.now();
+    });
+
+    switchCamera.addEventListener("click", async () => {
+      currentFacingFront = !currentFacingFront;
+      await startAR();
+    });
+
+    setFound(false);
+    await startAR();
   </script>
 </body>
 </html>
