@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
+  <title>Magic Card Camera v4</title>
+  <script async src="https://docs.opencv.org/4.x/opencv.js"></script>
+  <style>
+    :root{
+      --ui-white: rgba(255,255,255,.95);
+      --ui-soft: rgba(255,255,255,.76);
+      --ui-bg: rgba(0,0,0,.42);
+      --ui-border: rgba(255,255,255,.12);
+      --yellow: #ffd84f;
+      --bottom-safe: max(14px, env(safe-area-inset-bottom));
+      --top-safe: max(12px, env(safe-area-inset-top));
+    }
+    *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+    html,body{
+      margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:#000;
+      font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+      color:#fff;
+    }
+    #app{position:relative;width:100vw;height:100vh;height:100dvh;background:#000;overflow:hidden}
+    #video,#output{
+      position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    }
+    #video.mirror,#output.mirror{transform:scaleX(-1)}
+
+    .topFade{
+      position:absolute;left:0;right:0;top:0;height:16vh;min-height:86px;pointer-events:none;z-index:5;
+      background:linear-gradient(to bottom,rgba(0,0,0,.76),rgba(0,0,0,.26),rgba(0,0,0,0));
+    }
+    .bottomFade{
+      position:absolute;left:0;right:0;bottom:0;height:28vh;min-height:170px;pointer-events:none;z-index:5;
+      background:linear-gradient(to top,rgba(0,0,0,.95),rgba(0,0,0,.78),rgba(0,0,0,0));
+    }
+
+    .gridline{position:absolute;background:rgba(255,255,255,.30);pointer-events:none;z-index:4}
+    .v1,.v2{top:0;bottom:0;width:1px}
+    .h1,.h2{left:0;right:0;height:1px}
+    .v1{left:33.333%}.v2{left:66.666%}
+    .h1{top:33.333%}.h2{top:66.666%}
+
+    .focusCross{
+      position:absolute;left:50%;top:50%;width:42px;height:42px;transform:translate(-50%,-50%);
+      pointer-events:none;z-index:4;
+    }
+    .focusCross::before,.focusCross::after{
+      content:"";position:absolute;background:var(--yellow);box-shadow:0 0 6px rgba(255,216,79,.18);
+    }
+    .focusCross::before{left:0;right:0;top:20px;height:2px}
+    .focusCross::after{top:0;bottom:0;left:20px;width:2px}
+
+    .toolbar{
+      position:absolute;top:var(--top-safe);right:14px;z-index:8;
+      display:flex;gap:10px;align-items:center;
+    }
+    .toolbar .pill{
+      height:46px;padding:0 10px;border-radius:23px;
+      display:flex;align-items:center;gap:4px;
+      background:var(--ui-bg);border:1px solid var(--ui-border);
+      backdrop-filter:blur(10px);
+    }
+    .iconOnly{
+      width:34px;height:34px;border-radius:17px;
+      display:grid;place-items:center;background:transparent;color:#fff;
+    }
+    .iconOnly svg{width:21px;height:21px}
+
+    .statusDot{
+      position:absolute;left:14px;top:var(--top-safe);z-index:9;
+      width:11px;height:11px;border-radius:50%;
+      background:#ff4c4c;
+      box-shadow:0 0 8px rgba(255,76,76,.5);
+      border:1px solid rgba(255,255,255,.28);
+    }
+
+    .bottomUI{
+      position:absolute;left:0;right:0;bottom:0;z-index:8;
+      padding:0 18px calc(var(--bottom-safe) + 8px);
+      display:flex;flex-direction:column;gap:10px;
+    }
+    .modeRow{
+      display:flex;justify-content:center;align-items:center;
+      margin-bottom:2px;
+    }
+    .modePill{
+      display:flex;align-items:center;gap:2px;
+      padding:4px;border-radius:24px;
+      background:rgba(255,255,255,.08);
+      border:1px solid rgba(255,255,255,.10);
+      backdrop-filter:blur(10px);
+    }
+    .mode{
+      min-width:84px;height:38px;border-radius:19px;display:grid;place-items:center;
+      font-size:15px;font-weight:600;color:var(--ui-soft);
+    }
+    .mode.active{
+      background:rgba(255,255,255,.11);color:var(--yellow);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+
+    .shutterRow{
+      display:grid;grid-template-columns:64px 1fr 64px;align-items:center;
+      padding:0 0 2px;
+      min-height:98px;
+    }
+    .thumb{
+      width:54px;height:54px;border-radius:50%;overflow:hidden;justify-self:start;
+      border:1px solid rgba(255,255,255,.18);background:#555;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+    .thumb img{display:block;width:100%;height:100%;object-fit:cover}
+    #shutter{
+      justify-self:center;width:84px;height:84px;border-radius:50%;border:none;outline:none;cursor:pointer;
+      background:#f6f6f6;
+      box-shadow:0 0 0 6px rgba(255,255,255,.26), inset 0 0 0 2px rgba(0,0,0,.05);
+    }
+    #shutter:active{transform:scale(.97)}
+    #switchCamera{
+      justify-self:end;width:56px;height:56px;border-radius:50%;border:none;outline:none;cursor:pointer;
+      display:grid;place-items:center;background:rgba(255,255,255,.12);
+      backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);
+      color:#fff;
+    }
+    #switchCamera svg{width:30px;height:30px}
+    #switchCamera:active{transform:scale(.96)}
+
+    .flash{
+      position:absolute;inset:0;background:#fff;opacity:0;pointer-events:none;z-index:20;
+      transition:opacity .16s ease;
+    }
+
+    @media (max-height: 740px){
+      .topFade{min-height:72px}
+      .bottomFade{min-height:150px;height:25vh}
+      .bottomUI{padding:0 14px calc(var(--bottom-safe) + 4px);gap:8px}
+      .mode{min-width:76px;height:34px;font-size:14px}
+      .shutterRow{grid-template-columns:56px 1fr 56px;min-height:86px}
+      .thumb{width:48px;height:48px}
+      #shutter{width:74px;height:74px;box-shadow:0 0 0 5px rgba(255,255,255,.26), inset 0 0 0 2px rgba(0,0,0,.05)}
+      #switchCamera{width:50px;height:50px}
+    }
+  </style>
+</head>
+<body>
+<div id="app">
+  <video id="video" autoplay playsinline muted></video>
+  <canvas id="output"></canvas>
+
+  <div class="gridline v1"></div>
+  <div class="gridline v2"></div>
+  <div class="gridline h1"></div>
+  <div class="gridline h2"></div>
+  <div class="focusCross"></div>
+
+  <div class="topFade"></div>
+  <div class="bottomFade"></div>
+
+  <div class="statusDot" id="statusDot"></div>
+
+  <div class="toolbar">
+    <div class="pill">
+      <div class="iconOnly" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+          <path d="M20 14.5A8.5 8.5 0 1 1 9.5 4 7 7 0 0 0 20 14.5Z"/>
+        </svg>
+      </div>
+      <div class="iconOnly" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+          <path d="M13 3 5 14h6l-1 7 8-11h-6l1-7Z"/>
+          <path d="M3 3 21 21"/>
+        </svg>
+      </div>
+      <div class="iconOnly" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <circle cx="5" cy="12" r="1.8"/><circle cx="12" cy="12" r="1.8"/><circle cx="19" cy="12" r="1.8"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <div class="bottomUI">
+    <div class="modeRow">
+      <div class="modePill">
+        <div class="mode">錄影</div>
+        <div class="mode active">拍照</div>
+      </div>
+    </div>
+
+    <div class="shutterRow">
+      <div class="thumb" aria-hidden="true">
+        <img alt="" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'><defs><radialGradient id='g' cx='35%25' cy='30%25' r='70%25'><stop offset='0' stop-color='%23ffe7b0'/><stop offset='0.45' stop-color='%23d2c3ff'/><stop offset='1' stop-color='%23555f7f'/></radialGradient></defs><rect width='120' height='120' fill='url(%23g)'/><circle cx='44' cy='42' r='16' fill='%23fff7df'/><path d='M15 92C24 74 45 66 63 68c18 2 32 12 42 24' fill='none' stroke='%23ffffff' stroke-opacity='.65' stroke-width='12' stroke-linecap='round'/></svg>">
+      </div>
+
+      <button id="shutter" aria-label="快門"></button>
+
+      <button id="switchCamera" aria-label="切換前後鏡頭" title="切換前後鏡頭">
+        <svg viewBox="0 0 64 64" fill="none" stroke="white" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M20 22h16a12 12 0 0 1 12 12"/>
+          <path d="M45 16l7 6-7 6"/>
+          <path d="M44 42H28a12 12 0 0 1-12-12"/>
+          <path d="M19 36l-7 6 7 6"/>
+          <rect x="18" y="24" width="28" height="16" rx="5"/>
+          <circle cx="32" cy="32" r="5"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="flash" id="flash"></div>
+</div>
+
+<script>
+(() => {
+  const video = document.getElementById('video');
+  const output = document.getElementById('output');
+  const statusDot = document.getElementById('statusDot');
+  const shutterBtn = document.getElementById('shutter');
+  const switchBtn = document.getElementById('switchCamera');
+  const flashEl = document.getElementById('flash');
+
+  const outCtx = output.getContext('2d', { alpha: true });
+  let stream = null;
+  let facingMode = 'environment';
+  let cvReady = false;
+  let processing = false;
+  let animationHandle = null;
+  let fadeAlpha = 1.0;
+  let overlayEnabled = true;
+  let cardImg = new Image();
+  cardImg.src = 'card.png';
+
+  const offCanvas = document.createElement('canvas');
+  const offCtx = offCanvas.getContext('2d', { willReadFrequently: true });
+
+  let lastGoodQuad = null;
+  let stableQuad = null;
+  let lostFrames = 0;
+  let roiBox = null;
+
+  function setDot(found){
+    statusDot.style.background = found ? '#44d16b' : '#ff4d4d';
+    statusDot.style.boxShadow = found
+      ? '0 0 8px rgba(68,209,107,.65)'
+      : '0 0 8px rgba(255,77,77,.55)';
+  }
+
+  function flashScreen(){
+    flashEl.style.opacity = '0.85';
+    setTimeout(() => flashEl.style.opacity = '0', 90);
+  }
+
+  async function stopCamera(){
+    if(stream){
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+  }
+
+  async function startCamera(){
+    await stopCamera();
+    try{
+      stream = await navigator.mediaDevices.getUserMedia({
+        audio:false,
+        video:{
+          facingMode: { ideal: facingMode },
+          width: { ideal: 1280 },
+          height: { ideal: 720 }
+        }
+      });
+      video.srcObject = stream;
+      await video.play();
+
+      const mirrored = facingMode === 'user';
+      video.classList.toggle('mirror', mirrored);
+      output.classList.toggle('mirror', mirrored);
+
+      resetTracking(true);
+    }catch(err){
+      console.error(err);
+      alert('無法開啟相機，請確認已授權相機權限，並使用 HTTPS 或本機環境。');
+    }
+  }
+
+  function resetTracking(resetFade){
+    lastGoodQuad = null;
+    stableQuad = null;
+    lostFrames = 0;
+    roiBox = null;
+    if(resetFade) fadeAlpha = 1.0;
+    overlayEnabled = true;
+    setDot(false);
+  }
+
+  function distance(a,b){ return Math.hypot(a.x-b.x, a.y-b.y); }
+  function centerOf(pts){ return { x: pts.reduce((s,p)=>s+p.x,0)/pts.length, y: pts.reduce((s,p)=>s+p.y,0)/pts.length }; }
+  function polygonArea(pts){
+    let area = 0;
+    for(let i=0;i<pts.length;i++){
+      const p = pts[i], q = pts[(i+1)%pts.length];
+      area += p.x*q.y - q.x*p.y;
+    }
+    return Math.abs(area)/2;
+  }
+  function orderPointsClockwise(pts){
+    const c = centerOf(pts);
+    const sorted = pts.map(p => ({...p, a: Math.atan2(p.y-c.y, p.x-c.x)})).sort((m,n)=>m.a-n.a);
+    let start = 0, min = Infinity;
+    for(let i=0;i<sorted.length;i++){
+      const s = sorted[i].x + sorted[i].y;
+      if(s < min){ min = s; start = i; }
+    }
+    return [sorted[start], sorted[(start+1)%4], sorted[(start+2)%4], sorted[(start+3)%4]];
+  }
+  function sideStats(pts){
+    const top = distance(pts[0],pts[1]);
+    const right = distance(pts[1],pts[2]);
+    const bottom = distance(pts[2],pts[3]);
+    const left = distance(pts[3],pts[0]);
+    return {top,right,bottom,left,avgW:(top+bottom)/2,avgH:(left+right)/2};
+  }
+  function ensureAspectMatch(pts, srcW, srcH){
+    const s = sideStats(pts);
+    const dstLandscape = s.avgW >= s.avgH;
+    const srcLandscape = srcW >= srcH;
+    return dstLandscape !== srcLandscape ? [pts[1],pts[2],pts[3],pts[0]] : pts;
+  }
+  function blendPoints(prev, curr, alpha){
+    if(!prev) return curr.map(p=>({x:p.x,y:p.y}));
+    return prev.map((p,i)=>({ x:p.x*(1-alpha)+curr[i].x*alpha, y:p.y*(1-alpha)+curr[i].y*alpha }));
+  }
+  function expandQuad(pts, scale){
+    const c = centerOf(pts);
+    return pts.map(p=>({ x:c.x+(p.x-c.x)*scale, y:c.y+(p.y-c.y)*scale }));
+  }
+  function quadSimilarity(a,b){
+    if(!a || !b) return Infinity;
+    const ca = centerOf(a), cb = centerOf(b);
+    const centerDist = Math.hypot(ca.x-cb.x, ca.y-cb.y);
+    const sa = sideStats(a), sb = sideStats(b);
+    const sizeDiff = Math.abs(sa.avgW-sb.avgW) + Math.abs(sa.avgH-sb.avgH);
+    let cornerDiff = 0;
+    for(let i=0;i<4;i++) cornerDiff += distance(a[i],b[i]);
+    return centerDist*2.2 + sizeDiff*0.65 + (cornerDiff/4);
+  }
+  function getMaxCosine(pts){
+    let maxCos = 0;
+    for(let i=0;i<4;i++){
+      const p0 = pts[i];
+      const p1 = pts[(i+1)%4];
+      const p2 = pts[(i+3)%4];
+      const v1x = p1.x-p0.x, v1y = p1.y-p0.y;
+      const v2x = p2.x-p0.x, v2y = p2.y-p0.y;
+      const dot = v1x*v2x + v1y*v2y;
+      const mag = Math.hypot(v1x,v1y) * Math.hypot(v2x,v2y);
+      const cos = mag ? Math.abs(dot/mag) : 1;
+      if(cos > maxCos) maxCos = cos;
+    }
+    return maxCos;
+  }
+
+  function toGlobalPts(pts, roi){
+    if(!roi) return pts;
+    return pts.map(p => ({x: p.x + roi.x, y: p.y + roi.y}));
+  }
+
+  function makeROI(frameW, frameH){
+    if(stableQuad){
+      const c = centerOf(stableQuad);
+      const s = sideStats(stableQuad);
+      const w = Math.max(s.avgW * 2.2, frameW * 0.28);
+      const h = Math.max(s.avgH * 2.2, frameH * 0.32);
+      return {
+        x: Math.max(0, Math.floor(c.x - w/2)),
+        y: Math.max(0, Math.floor(c.y - h/2)),
+        width: Math.min(frameW, Math.floor(w)),
+        height: Math.min(frameH, Math.floor(h))
+      };
+    }
+    return {
+      x: Math.floor(frameW * 0.12),
+      y: Math.floor(frameH * 0.16),
+      width: Math.floor(frameW * 0.76),
+      height: Math.floor(frameH * 0.62)
+    };
+  }
+
+  function rectScore(pts, area, frameW, frameH){
+    const c = centerOf(pts);
+    const s = sideStats(pts);
+    const ratio = Math.max(s.avgW,s.avgH) / Math.max(1,Math.min(s.avgW,s.avgH));
+    const targetRatio = 88/63;
+    const ratioPenalty = Math.abs(ratio-targetRatio);
+
+    const distToCenter = Math.hypot(c.x-frameW/2, c.y-frameH/2);
+    const diag = Math.hypot(frameW, frameH);
+
+    const minX = Math.min(...pts.map(p=>p.x));
+    const maxX = Math.max(...pts.map(p=>p.x));
+    const minY = Math.min(...pts.map(p=>p.y));
+    const maxY = Math.max(...pts.map(p=>p.y));
+    const touchesBorder = minX < 2 || minY < 2 || maxX > frameW-2 || maxY > frameH-2;
+
+    const areaRatio = area / (frameW*frameH);
+
+    let score = 0;
+    score += ratioPenalty * 1500;
+    score += (distToCenter/diag) * 520;
+    if(areaRatio < 0.004 || areaRatio > 0.68) score += 500;
+    if(touchesBorder) score += 140;
+    return score;
+  }
+
+  function detectCardQuad(frameMat, roi){
+    const mat = roi ? frameMat.roi(new cv.Rect(roi.x, roi.y, roi.width, roi.height)) : frameMat.clone();
+    const gray = new cv.Mat();
+    const blur = new cv.Mat();
+    const edges = new cv.Mat();
+    const contours = new cv.MatVector();
+    const hierarchy = new cv.Mat();
+
+    try{
+      cv.cvtColor(mat, gray, cv.COLOR_RGBA2GRAY, 0);
+      cv.GaussianBlur(gray, blur, new cv.Size(5,5), 0, 0, cv.BORDER_DEFAULT);
+      cv.Canny(blur, edges, 24, 85, 3, false);
+
+      const kernel = cv.Mat.ones(3,3,cv.CV_8U);
+      cv.dilate(edges, edges, kernel);
+      kernel.delete();
+
+      cv.findContours(edges, contours, hierarchy, cv.RETR_LIST, cv.CHAIN_APPROX_SIMPLE);
+
+      let bestPts = null;
+      let bestScore = Infinity;
+
+      for(let i=0;i<contours.size();i++){
+        const cnt = contours.get(i);
+        try{
+          const area = cv.contourArea(cnt, false);
+          if(area < 1800) continue;
+
+          let candidatePts = null;
+          const peri = cv.arcLength(cnt, true);
+          const approx = new cv.Mat();
+          try{
+            cv.approxPolyDP(cnt, approx, 0.024 * peri, true);
+
+            if(approx.rows === 4 && cv.isContourConvex(approx)){
+              const d = approx.data32S;
+              candidatePts = [
+                {x:d[0], y:d[1]},
+                {x:d[2], y:d[3]},
+                {x:d[4], y:d[5]},
+                {x:d[6], y:d[7]}
+              ];
+            }else{
+              const rr = cv.minAreaRect(cnt);
+              const v = cv.RotatedRect.points(rr);
+              candidatePts = [
+                {x:v[0].x, y:v[0].y},
+                {x:v[1].x, y:v[1].y},
+                {x:v[2].x, y:v[2].y},
+                {x:v[3].x, y:v[3].y}
+              ];
+            }
+          } finally {
+            approx.delete();
+          }
+
+          if(!candidatePts) continue;
+          candidatePts = orderPointsClockwise(candidatePts);
+
+          const polyA = polygonArea(candidatePts);
+          const s = sideStats(candidatePts);
+          if(s.avgW < 38 || s.avgH < 54) continue;
+
+          const ratio = Math.max(s.avgW,s.avgH) / Math.max(1,Math.min(s.avgW,s.avgH));
+          if(ratio < 1.16 || ratio > 1.86) continue;
+          if(getMaxCosine(candidatePts) > 0.52) continue;
+
+          const areaRatio = polyA / (mat.cols*mat.rows);
+          if(areaRatio < 0.01 || areaRatio > 0.78) continue;
+
+          let score = rectScore(candidatePts, polyA, mat.cols, mat.rows);
+
+          const globalPts = toGlobalPts(candidatePts, roi);
+
+          if(lastGoodQuad){
+            score += Math.min(650, quadSimilarity(lastGoodQuad, globalPts) * 0.55);
+          }
+
+          if(stableQuad){
+            score += Math.min(1200, quadSimilarity(stableQuad, globalPts) * 0.75);
+          }
+
+          if(score < bestScore){
+            bestScore = score;
+            bestPts = globalPts;
+          }
+        } finally {
+          cnt.delete();
+        }
+      }
+
+      return bestPts;
+    } finally {
+      mat.delete();
+      gray.delete();
+      blur.delete();
+      edges.delete();
+      contours.delete();
+      hierarchy.delete();
+    }
+  }
+
+  function drawOverlay(src, drawPts){
+    const cardMat = cv.imread(cardImg);
+    const srcPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
+      0,0,
+      cardMat.cols,0,
+      cardMat.cols,cardMat.rows,
+      0,cardMat.rows
+    ]);
+    const dstPts = cv.matFromArray(4, 1, cv.CV_32FC2, [
+      drawPts[0].x, drawPts[0].y,
+      drawPts[1].x, drawPts[1].y,
+      drawPts[2].x, drawPts[2].y,
+      drawPts[3].x, drawPts[3].y
+    ]);
+    const M = cv.getPerspectiveTransform(srcPts, dstPts);
+    const warped = new cv.Mat();
+    try{
+      cv.warpPerspective(cardMat, warped, M, new cv.Size(src.cols, src.rows), cv.INTER_LINEAR, cv.BORDER_CONSTANT, new cv.Scalar());
+      cv.addWeighted(src, 1.0, warped, fadeAlpha, 0, src);
+      cv.imshow(output, src);
+    } finally {
+      warped.delete();
+      M.delete();
+      srcPts.delete();
+      dstPts.delete();
+      cardMat.delete();
+    }
+  }
+
+  function renderFrame(){
+    if(!cvReady || !video.videoWidth || !video.videoHeight){
+      animationHandle = requestAnimationFrame(renderFrame);
+      return;
+    }
+    if(processing){
+      animationHandle = requestAnimationFrame(renderFrame);
+      return;
+    }
+    processing = true;
+
+    try{
+      output.width = video.videoWidth;
+      output.height = video.videoHeight;
+      offCanvas.width = video.videoWidth;
+      offCanvas.height = video.videoHeight;
+
+      offCtx.drawImage(video, 0, 0, offCanvas.width, offCanvas.height);
+      outCtx.clearRect(0,0,output.width,output.height);
+      outCtx.drawImage(video, 0, 0, output.width, output.height);
+
+      const src = cv.imread(offCanvas);
+      try{
+        const roi = makeROI(src.cols, src.rows);
+        roiBox = roi;
+        let quad = detectCardQuad(src, roi);
+
+        if(quad){
+          lostFrames = 0;
+          lastGoodQuad = quad.map(p=>({x:p.x,y:p.y}));
+          stableQuad = blendPoints(stableQuad, quad, stableQuad ? 0.14 : 1.0);
+          setDot(true);
+
+          if(cardImg.complete && cardImg.naturalWidth > 0 && overlayEnabled){
+            let drawPts = stableQuad.map(p=>({x:p.x,y:p.y}));
+            drawPts = ensureAspectMatch(drawPts, cardImg.naturalWidth, cardImg.naturalHeight);
+            drawPts = expandQuad(drawPts, 0.962);
+            drawOverlay(src, drawPts);
+          }
+        }else{
+          lostFrames++;
+          if(lostFrames <= 14 && stableQuad){
+            setDot(true);
+            if(cardImg.complete && cardImg.naturalWidth > 0 && overlayEnabled){
+              let drawPts = stableQuad.map(p=>({x:p.x,y:p.y}));
+              drawPts = ensureAspectMatch(drawPts, cardImg.naturalWidth, cardImg.naturalHeight);
+              drawPts = expandQuad(drawPts, 0.962);
+              drawOverlay(src, drawPts);
+            }
+          }else{
+            stableQuad = null;
+            lastGoodQuad = null;
+            setDot(false);
+          }
+        }
+      } finally {
+        src.delete();
+      }
+    }catch(err){
+      console.error('影像處理錯誤:', err);
+      setDot(false);
+    } finally {
+      processing = false;
+      animationHandle = requestAnimationFrame(renderFrame);
+    }
+  }
+
+  async function waitForOpenCV(){
+    return new Promise((resolve) => {
+      const check = () => {
+        if(window.cv && cv.Mat){
+          resolve();
+        }else{
+          setTimeout(check, 80);
+        }
+      };
+      check();
+    });
+  }
+
+  output.addEventListener('click', () => {
+    fadeAlpha = Math.max(0, fadeAlpha - 0.18);
+  });
+
+  shutterBtn.addEventListener('click', () => {
+    fadeAlpha = 1.0;
+    overlayEnabled = true;
+    flashScreen();
+    resetTracking(false);
+  });
+
+  switchBtn.addEventListener('click', async () => {
+    facingMode = facingMode === 'environment' ? 'user' : 'environment';
+    await startCamera();
+  });
+
+  document.addEventListener('visibilitychange', () => {
+    if(document.hidden){
+      if(animationHandle) cancelAnimationFrame(animationHandle);
+      animationHandle = null;
+    }else if(!animationHandle){
+      renderFrame();
+    }
+  });
+
+  (async () => {
+    await waitForOpenCV();
+    cvReady = true;
+    await startCamera();
+    renderFrame();
+  })();
+})();
+</script>
+</body>
+</html>
