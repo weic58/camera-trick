@@ -37,16 +37,19 @@
       z-index:1;
       overflow:hidden;
       background:#000;
+      transform-origin:center center;
+    }
+    #ar-container.mirror{
+      transform:scaleX(-1);
     }
 
     .overlay-ui{
       position:fixed; inset:0; pointer-events:none; z-index:20;
     }
 
-    /* iPhone-like top/bottom black bars */
     .topBlack{
       position:absolute; left:0; right:0; top:0;
-      height:max(96px, 14vh);
+      height:max(72px, 10.5vh);
       background:#000;
       z-index:0;
     }
@@ -58,7 +61,7 @@
     }
 
     .topFade{
-      position:absolute;left:0;right:0;top:0;height:18vh;min-height:100px;
+      position:absolute;left:0;right:0;top:0;height:15vh;min-height:76px;
       background:linear-gradient(to bottom,rgba(0,0,0,.86),rgba(0,0,0,.40),rgba(0,0,0,0));
       z-index:1;
     }
@@ -68,7 +71,16 @@
       z-index:1;
     }
 
-    .gridline{position:absolute;background:rgba(255,255,255,.30); z-index:2;}
+    .cameraGuide{
+      position:absolute;
+      left:0; right:0;
+      top:max(72px, 10.5vh);
+      bottom:max(170px, 24vh);
+      z-index:2;
+      overflow:hidden;
+      pointer-events:none;
+    }
+    .gridline{position:absolute;background:rgba(255,255,255,.30);}
     .v1,.v2{top:0;bottom:0;width:1px}
     .h1,.h2{left:0;right:0;height:1px}
     .v1{left:33.333%}.v2{left:66.666%}
@@ -76,24 +88,12 @@
 
     .focusCross{
       position:absolute;left:50%;top:50%;width:42px;height:42px;transform:translate(-50%,-50%);
-      z-index:2;
     }
     .focusCross::before,.focusCross::after{
       content:"";position:absolute;background:var(--yellow);box-shadow:0 0 6px rgba(255,216,79,.18);
     }
     .focusCross::before{left:0;right:0;top:20px;height:2px}
     .focusCross::after{top:0;bottom:0;left:20px;width:2px}
-
-    .cameraGuide{
-      position:absolute;
-      left:0; right:0;
-      top:max(96px, 14vh);
-      bottom:max(170px, 24vh);
-      z-index:2;
-      overflow:hidden;
-      pointer-events:none;
-    }
-
 
     .statusDot{
       position:absolute;left:14px;top:var(--top-safe);
@@ -120,62 +120,6 @@
       display:grid;place-items:center;background:transparent;color:#fff;
     }
     .iconOnly svg{width:21px;height:21px}
-
-    .bottomUI{
-      position:absolute;left:0;right:0;bottom:0;
-      padding:0 18px calc(var(--bottom-safe) + 8px);
-      display:flex;flex-direction:column;gap:10px;
-      z-index:5;
-    }
-    .modeRow{
-      display:flex;justify-content:center;align-items:center;margin-bottom:2px;
-    }
-    .modePill{
-      display:flex;align-items:center;gap:2px;padding:4px;border-radius:24px;
-      background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.10);
-      backdrop-filter:blur(10px);
-    }
-    .mode{
-      min-width:84px;height:38px;border-radius:19px;display:grid;place-items:center;
-      font-size:15px;font-weight:600;color:var(--ui-soft);
-    }
-    .mode.active{
-      background:rgba(255,255,255,.11);color:var(--yellow);
-      box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
-    }
-
-    .shutterRow{
-      display:grid;grid-template-columns:64px 1fr 64px;align-items:center;
-      padding:0 0 2px; min-height:98px;
-    }
-    .thumb{
-      width:54px;height:54px;border-radius:50%;overflow:hidden;justify-self:start;
-      border:1px solid rgba(255,255,255,.18);background:#555;
-      box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
-    }
-    .thumb img{display:block;width:100%;height:100%;object-fit:cover}
-    #shutter{
-      pointer-events:auto;
-      justify-self:center;width:84px;height:84px;border-radius:50%;border:none;outline:none;cursor:pointer;
-      background:#f6f6f6;
-      box-shadow:0 0 0 6px rgba(255,255,255,.26), inset 0 0 0 2px rgba(0,0,0,.05);
-    }
-    #switchCamera{
-      pointer-events:auto;
-      justify-self:end;width:56px;height:56px;border-radius:50%;border:none;outline:none;cursor:pointer;
-      display:grid;place-items:center;background:rgba(255,255,255,.12);
-      backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);
-      color:#fff;
-    }
-    #switchCamera svg{width:32px;height:32px}
-    #switchCamera:active,#shutter:active{transform:scale(.96)}
-
-    .loader{
-      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-      background:rgba(0,0,0,.85); z-index:40; color:white; font-size:16px;
-      text-align:center; padding:24px;
-    }
-    .loader.hidden{display:none}
 
     .settingsPanel{
       position:absolute;
@@ -208,44 +152,87 @@
       font-size:12px;
       color:rgba(255,255,255,.92);
     }
-    .settingsRow input[type="range"]{
-      width:100%;
-    }
-    .colorRow{
-      display:flex;
-      gap:8px;
-      margin-top:6px;
-    }
+    .settingsRow input[type="range"]{width:100%}
+    .colorRow{display:flex;gap:8px;margin-top:6px}
     .presetColor{
-      width:24px;
-      height:24px;
-      border-radius:50%;
+      width:24px;height:24px;border-radius:50%;
       border:1px solid rgba(255,255,255,.22);
-      cursor:pointer;
-      pointer-events:auto;
-      padding:0;
+      cursor:pointer;pointer-events:auto;padding:0;
+    }
+
+    .bottomUI{
+      position:absolute;left:0;right:0;bottom:0;
+      padding:0 18px calc(var(--bottom-safe) + 8px);
+      display:flex;flex-direction:column;gap:10px;
+      z-index:5;
+    }
+    .modeRow{
+      display:flex;justify-content:center;align-items:center;margin-bottom:2px;
+    }
+    .modePill{
+      display:flex;align-items:center;gap:2px;padding:4px;border-radius:24px;
+      background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.10);
+      backdrop-filter:blur(10px);
+    }
+    .mode{
+      min-width:84px;height:38px;border-radius:19px;display:grid;place-items:center;
+      font-size:15px;font-weight:600;color:var(--ui-soft);
+    }
+    .mode.active{
+      background:rgba(255,255,255,.11);color:var(--yellow);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+
+    .shutterRow{
+      display:grid;grid-template-columns:64px 1fr 64px;align-items:center;
+      padding:0 0 2px; min-height:98px;
     }
     .thumbButton{
       pointer-events:auto;
-      background:none;
-      border:none;
-      padding:0;
-      justify-self:start;
-      cursor:pointer;
+      background:none;border:none;padding:0;justify-self:start;cursor:pointer;
     }
+    .thumb{
+      width:54px;height:54px;border-radius:50%;overflow:hidden;
+      border:1px solid rgba(255,255,255,.18);background:#555;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+    }
+    .thumb img{display:block;width:100%;height:100%;object-fit:cover}
+    #shutter{
+      pointer-events:auto;
+      justify-self:center;width:84px;height:84px;border-radius:50%;border:none;outline:none;cursor:pointer;
+      background:#f6f6f6;
+      box-shadow:0 0 0 6px rgba(255,255,255,.26), inset 0 0 0 2px rgba(0,0,0,.05);
+    }
+    #switchCamera{
+      pointer-events:auto;
+      justify-self:end;width:56px;height:56px;border-radius:50%;border:none;outline:none;cursor:pointer;
+      display:grid;place-items:center;background:rgba(255,255,255,.12);
+      backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);
+      color:#fff;
+    }
+    #switchCamera svg{width:32px;height:32px}
+    #switchCamera:active,#shutter:active{transform:scale(.96)}
+
+    .loader{
+      position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      background:rgba(0,0,0,.85); z-index:40; color:white; font-size:16px;
+      text-align:center; padding:24px;
+    }
+    .loader.hidden{display:none}
 
     @media (max-height: 740px){
-      .topBlack{height:max(82px, 12vh)}
+      .topBlack{height:max(62px, 9vh)}
       .bottomBlack{height:max(150px, 22vh)}
-      .cameraGuide{top:max(82px, 12vh); bottom:max(150px, 22vh)}
-      .topFade{min-height:84px}
+      .topFade{min-height:64px}
       .bottomFade{min-height:150px;height:26vh}
+      .cameraGuide{top:max(62px, 9vh); bottom:max(150px, 22vh)}
       .bottomUI{padding:0 14px calc(var(--bottom-safe) + 4px);gap:8px}
       .mode{min-width:76px;height:34px;font-size:14px}
       .shutterRow{grid-template-columns:56px 1fr 56px;min-height:86px}
       .thumb{width:48px;height:48px}
       #shutter{width:74px;height:74px;box-shadow:0 0 0 5px rgba(255,255,255,.26), inset 0 0 0 2px rgba(0,0,0,.05)}
       #switchCamera{width:50px;height:50px}
+      .settingsPanel{width:min(240px, 48vw);padding:10px}
     }
   </style>
 </head>
@@ -292,14 +279,14 @@
     </div>
 
     <div class="settingsPanel" id="settingsPanel">
-      <div class="settingsTitle">牌面濾鏡</div>
+      <div class="settingsTitle">牌面調整</div>
       <div class="settingsRow">
-        <label><span>陰影透明度</span><span id="shadowValue">0.22</span></label>
-        <input id="shadowSlider" type="range" min="0" max="0.6" step="0.01" value="0.22">
+        <label><span>牌面明暗</span><span id="shadowValue">1.00</span></label>
+        <input id="shadowSlider" type="range" min="0.35" max="1.30" step="0.01" value="1.00">
       </div>
       <div class="settingsRow">
-        <label><span>濾鏡透明度</span><span id="tintValue">0.00</span></label>
-        <input id="tintSlider" type="range" min="0" max="0.5" step="0.01" value="0.00">
+        <label><span>顏色濾鏡</span><span id="tintValue">0.00</span></label>
+        <input id="tintSlider" type="range" min="0" max="0.50" step="0.01" value="0.00">
       </div>
       <div class="settingsRow">
         <label><span>濾鏡顏色</span><input id="tintColor" type="color" value="#ffffff" style="width:38px;height:24px;background:transparent;border:none;padding:0"></label>
@@ -369,13 +356,13 @@
     let scene = null;
     let camera = null;
     let cardMaterial = null;
-    let shadowMaterial = null;
+    let shadeMaterial = null;
     let tintMaterial = null;
     let currentFacingFront = false;
 
     const CARD_W = 1.11;
     const CARD_H = 0.79;
-    let shadowOpacityBase = 0.22;
+    let brightnessBase = 1.00;
     let tintOpacityBase = 0.00;
     let tintColorHex = "#ffffff";
 
@@ -387,9 +374,17 @@
     }
 
     function updateMaterialControls(){
-      shadowValue.textContent = shadowOpacityBase.toFixed(2);
+      shadowValue.textContent = brightnessBase.toFixed(2);
       tintValue.textContent = tintOpacityBase.toFixed(2);
-      if (shadowMaterial) shadowMaterial.opacity = fadeAlpha * shadowOpacityBase;
+      if (shadeMaterial) {
+        if (brightnessBase <= 1) {
+          shadeMaterial.color.set("#000000");
+          shadeMaterial.opacity = fadeAlpha * (1 - brightnessBase) * 0.95;
+        } else {
+          shadeMaterial.color.set("#ffffff");
+          shadeMaterial.opacity = fadeAlpha * (brightnessBase - 1) * 0.45;
+        }
+      }
       if (tintMaterial) {
         tintMaterial.opacity = fadeAlpha * tintOpacityBase;
         tintMaterial.color.set(tintColorHex);
@@ -432,25 +427,6 @@
       roundedRect(ctx, innerX, innerY, innerW, innerH, Math.max(8, radius - border*0.6));
       ctx.clip();
       ctx.drawImage(img, innerX, innerY, innerW, innerH);
-      ctx.restore();
-
-      // subtle internal shading / gloss on card surface
-      const grad1 = ctx.createLinearGradient(0, 0, 0, ch);
-      grad1.addColorStop(0, "rgba(255,255,255,0.12)");
-      grad1.addColorStop(0.35, "rgba(255,255,255,0.03)");
-      grad1.addColorStop(1, "rgba(0,0,0,0.10)");
-      ctx.save();
-      roundedRect(ctx, 0, 0, cw, ch, radius);
-      ctx.clip();
-      ctx.fillStyle = grad1;
-      ctx.fillRect(0, 0, cw, ch);
-
-      const gloss = ctx.createLinearGradient(0, 0, cw*0.7, ch*0.7);
-      gloss.addColorStop(0, "rgba(255,255,255,0.14)");
-      gloss.addColorStop(0.22, "rgba(255,255,255,0.04)");
-      gloss.addColorStop(0.45, "rgba(255,255,255,0)");
-      ctx.fillStyle = gloss;
-      ctx.fillRect(0, 0, cw, ch);
       ctx.restore();
 
       const texture = new THREE.CanvasTexture(canvas);
@@ -506,8 +482,7 @@
         fadeAnimating = false;
       }
       if (cardMaterial) cardMaterial.opacity = fadeAlpha;
-      if (shadowMaterial) shadowMaterial.opacity = fadeAlpha * shadowOpacityBase;
-      if (tintMaterial) tintMaterial.opacity = fadeAlpha * tintOpacityBase;
+      updateMaterialControls();
     }
 
     async function stopCurrent() {
@@ -525,7 +500,7 @@
       scene = null;
       camera = null;
       cardMaterial = null;
-      shadowMaterial = null;
+      shadeMaterial = null;
       tintMaterial = null;
       setFound(false);
     }
@@ -535,6 +510,8 @@
       await stopCurrent();
 
       try {
+        container.classList.toggle("mirror", currentFacingFront);
+
         mindarThree = new MindARThree({
           container,
           imageTargetSrc: "./targets.mind",
@@ -573,17 +550,17 @@
         cardPlane.position.z = 0.01;
         anchor.group.add(cardPlane);
 
-        // shadow/highlight ON the card surface, not behind it
-        shadowMaterial = new THREE.MeshBasicMaterial({
+        shadeMaterial = new THREE.MeshBasicMaterial({
           map: surfaceShadeTexture,
+          color: "#000000",
           transparent: true,
-          opacity: shadowOpacityBase,
+          opacity: 0,
           side: THREE.DoubleSide,
           depthWrite: false
         });
         const surfacePlane = new THREE.Mesh(
           new THREE.PlaneGeometry(CARD_W, CARD_H),
-          shadowMaterial
+          shadeMaterial
         );
         surfacePlane.position.set(0, 0, 0.012);
         anchor.group.add(surfacePlane);
@@ -624,13 +601,13 @@
       fadeAlpha = 1;
       fadeAnimating = false;
       if (cardMaterial) cardMaterial.opacity = 1;
-      if (shadowMaterial) shadowMaterial.opacity = shadowOpacityBase;
-      if (tintMaterial) tintMaterial.opacity = tintOpacityBase;
+      updateMaterialControls();
     });
 
     document.body.addEventListener("click", (e) => {
-      const isButton = e.target.closest("#shutter") || e.target.closest("#switchCamera");
+      const isButton = e.target.closest("#shutter") || e.target.closest("#switchCamera") || e.target.closest("#openSettings") || e.target.closest("#settingsPanel");
       if(isButton) return;
+      if (fadeAnimating || fadeAlpha <= 0.02) return;
       fadeAnimating = true;
       fadeStart = performance.now();
     });
@@ -640,6 +617,7 @@
         if (mindarThree && typeof mindarThree.switchCamera === "function") {
           await mindarThree.switchCamera();
           currentFacingFront = !currentFacingFront;
+          container.classList.toggle("mirror", currentFacingFront);
         } else {
           currentFacingFront = !currentFacingFront;
           await startAR();
@@ -655,26 +633,20 @@
       e.stopPropagation();
       settingsPanel.classList.toggle("open");
     });
-
-    settingsPanel.addEventListener("click", (e) => {
-      e.stopPropagation();
-    });
+    settingsPanel.addEventListener("click", (e) => e.stopPropagation());
 
     shadowSlider.addEventListener("input", () => {
-      shadowOpacityBase = parseFloat(shadowSlider.value);
+      brightnessBase = parseFloat(shadowSlider.value);
       updateMaterialControls();
     });
-
     tintSlider.addEventListener("input", () => {
       tintOpacityBase = parseFloat(tintSlider.value);
       updateMaterialControls();
     });
-
     tintColorInput.addEventListener("input", () => {
       tintColorHex = tintColorInput.value;
       updateMaterialControls();
     });
-
     document.querySelectorAll(".presetColor").forEach((btn) => {
       btn.addEventListener("click", (e) => {
         e.stopPropagation();
@@ -690,6 +662,7 @@
 
     setFound(false);
     await startAR();
+    container.classList.toggle("mirror", currentFacingFront);
   </script>
 </body>
 </html>
