@@ -292,7 +292,7 @@
         <input id="featherSlider" type="range" min="0.00" max="0.16" step="0.005" value="0.00">
       </div>
       <div class="settingsRow">
-        <label><span>顏色濾鏡</span><span id="tintValue">0.00</span></label>
+        <label><span>暖色紙感</span><span id="tintValue">0.00</span></label>
         <input id="tintSlider" type="range" min="0" max="0.60" step="0.01" value="0.00">
       </div>
       <div class="settingsRow">
@@ -351,9 +351,15 @@
     const featherSlider = document.getElementById("featherSlider");
     const tintSlider = document.getElementById("tintSlider");
     const tintColorInput = document.getElementById("tintColor");
+    const contrastSlider = document.getElementById("contrastSlider");
+    const saturationSlider = document.getElementById("saturationSlider");
+    const cardBrightnessSlider = document.getElementById("cardBrightnessSlider");
     const shadowValue = document.getElementById("shadowValue");
     const featherValue = document.getElementById("featherValue");
     const tintValue = document.getElementById("tintValue");
+    const contrastValue = document.getElementById("contrastValue");
+    const saturationValue = document.getElementById("saturationValue");
+    const cardBrightnessValue = document.getElementById("cardBrightnessValue");
 
     let fadeAlpha = 1;
     let fadeAnimating = false;
@@ -370,14 +376,19 @@
     let tintMaterial = null;
     let currentFacingFront = false;
     let currentMaskTexture = null;
+    let currentCardTexture = null;
+    let currentLumaMaskTexture = null;
     let cardGroup = null;
 
     const CARD_W = 1.11;
     const CARD_H = 0.79;
-    let darkOpacityBase = parseFloat(localStorage.getItem("camera_dark_opacity") ?? "0.22");
-    let featherBase = parseFloat(localStorage.getItem("camera_feather") ?? "0.00");
-    let tintOpacityBase = parseFloat(localStorage.getItem("camera_tint_opacity") ?? "0.00");
-    let tintColorHex = localStorage.getItem("camera_tint_color") ?? "#ffffff";
+    let darkOpacityBase = parseFloat(localStorage.getItem("camera_dark_opacity") ?? "0.12");
+    let featherBase = parseFloat(localStorage.getItem("camera_feather") ?? "0.01");
+    let tintOpacityBase = parseFloat(localStorage.getItem("camera_tint_opacity") ?? "0.08");
+    let tintColorHex = localStorage.getItem("camera_tint_color") ?? "#f3e7cf";
+    let contrastBase = parseFloat(localStorage.getItem("camera_contrast") ?? "1.12");
+    let saturationBase = parseFloat(localStorage.getItem("camera_saturation") ?? "1.10");
+    let brightnessCardBase = parseFloat(localStorage.getItem("camera_card_brightness") ?? "0.96");
 
     function setFound(found){
       statusDot.style.background = found ? "#44d16b" : "#ff4d4d";
@@ -391,6 +402,9 @@
       localStorage.setItem("camera_feather", String(featherBase));
       localStorage.setItem("camera_tint_opacity", String(tintOpacityBase));
       localStorage.setItem("camera_tint_color", tintColorHex);
+      localStorage.setItem("camera_contrast", String(contrastBase));
+      localStorage.setItem("camera_saturation", String(saturationBase));
+      localStorage.setItem("camera_card_brightness", String(brightnessCardBase));
     }
 
     function updateMaterialControls(){
@@ -398,11 +412,18 @@
       featherSlider.value = String(featherBase);
       tintSlider.value = String(tintOpacityBase);
       tintColorInput.value = tintColorHex;
+      contrastSlider.value = String(contrastBase);
+      saturationSlider.value = String(saturationBase);
+      cardBrightnessSlider.value = String(brightnessCardBase);
+
       shadowValue.textContent = darkOpacityBase.toFixed(2);
       featherValue.textContent = featherBase.toFixed(3);
       tintValue.textContent = tintOpacityBase.toFixed(2);
+      contrastValue.textContent = contrastBase.toFixed(2);
+      saturationValue.textContent = saturationBase.toFixed(2);
+      cardBrightnessValue.textContent = brightnessCardBase.toFixed(2);
 
-      if (shadeMaterial) shadeMaterial.opacity = fadeAlpha * 0.10;
+      if (shadeMaterial) shadeMaterial.opacity = fadeAlpha * 0.08;
       if (darkMaterial) darkMaterial.opacity = fadeAlpha * darkOpacityBase;
       if (tintMaterial) {
         tintMaterial.opacity = fadeAlpha * tintOpacityBase;
@@ -435,6 +456,36 @@
       img.src = src;
     });
 
+    function clamp255(v) {
+      return Math.max(0, Math.min(255, v));
+    }
+
+    function processImageData(imageData, contrast, saturation, brightnessMul) {
+      const d = imageData.data;
+      const c = contrast;
+      const s = saturation;
+      const b = brightnessMul;
+      for (let i = 0; i < d.length; i += 4) {
+        let r = d[i] * b;
+        let g = d[i + 1] * b;
+        let bl = d[i + 2] * b;
+
+        r = ((r - 128) * c) + 128;
+        g = ((g - 128) * c) + 128;
+        bl = ((bl - 128) * c) + 128;
+
+        const gray = 0.299 * r + 0.587 * g + 0.114 * bl;
+        r = gray + (r - gray) * s;
+        g = gray + (g - gray) * s;
+        bl = gray + (bl - gray) * s;
+
+        d[i] = clamp255(r);
+        d[i + 1] = clamp255(g);
+        d[i + 2] = clamp255(bl);
+      }
+      return imageData;
+    }
+
     async function buildCardTexture() {
       const img = await loadImage("./card.png");
       const cw = 1400;
@@ -455,13 +506,67 @@
       ctx.fillStyle = "#ffffff";
       ctx.fill();
 
+      const off = document.createElement("canvas");
+      off.width = innerW;
+      off.height = innerH;
+      const offCtx = off.getContext("2d");
+      offCtx.drawImage(img, 0, 0, innerW, innerH);
+      let imgData = offCtx.getImageData(0, 0, innerW, innerH);
+      imgData = processImageData(imgData, contrastBase, saturationBase, brightnessCardBase);
+      offCtx.putImageData(imgData, 0, 0);
+
       ctx.save();
       roundedRect(ctx, innerX, innerY, innerW, innerH, Math.max(8, radius - border*0.6));
       ctx.clip();
-      ctx.drawImage(img, innerX, innerY, innerW, innerH);
+      ctx.drawImage(off, innerX, innerY);
       ctx.restore();
 
       const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    async function buildWhiteAreaMaskTexture() {
+      const img = await loadImage("./card.png");
+      const cw = 1024;
+      const ch = Math.round(cw * img.height / img.width);
+      const canvas = document.createElement("canvas");
+      canvas.width = cw;
+      canvas.height = ch;
+      const ctx = canvas.getContext("2d");
+
+      ctx.drawImage(img, 0, 0, cw, ch);
+      const imageData = ctx.getImageData(0, 0, cw, ch);
+      const d = imageData.data;
+
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i], g = d[i+1], b = d[i+2];
+        const luma = 0.299*r + 0.587*g + 0.114*b;
+        const maxc = Math.max(r,g,b);
+        const minc = Math.min(r,g,b);
+        const sat = maxc === 0 ? 0 : (maxc - minc) / maxc;
+
+        let mask = 0;
+        if (luma > 175 && sat < 0.28) {
+          mask = Math.min(255, Math.max(0, (luma - 175) * 3.2));
+        }
+
+        d[i] = 255;
+        d[i+1] = 255;
+        d[i+2] = 255;
+        d[i+3] = mask;
+      }
+      ctx.putImageData(imageData, 0, 0);
+
+      const blurCanvas = document.createElement("canvas");
+      blurCanvas.width = cw;
+      blurCanvas.height = ch;
+      const bctx = blurCanvas.getContext("2d");
+      bctx.filter = "blur(1.5px)";
+      bctx.drawImage(canvas, 0, 0);
+
+      const texture = new THREE.CanvasTexture(blurCanvas);
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.needsUpdate = true;
       return texture;
@@ -545,6 +650,25 @@
       updateMaterialControls();
     }
 
+    async function refreshCardTexture() {
+      if (!cardMaterial) return;
+      const newTexture = await buildCardTexture();
+      const old = currentCardTexture;
+      currentCardTexture = newTexture;
+      cardMaterial.map = newTexture;
+      cardMaterial.needsUpdate = true;
+      if (old) old.dispose();
+
+      if (tintMaterial) {
+        const newWhiteMask = await buildWhiteAreaMaskTexture();
+        const oldWhiteMask = currentLumaMaskTexture;
+        currentLumaMaskTexture = newWhiteMask;
+        tintMaterial.map = newWhiteMask;
+        tintMaterial.needsUpdate = true;
+        if (oldWhiteMask) oldWhiteMask.dispose();
+      }
+    }
+
     async function stopCurrent() {
       if (mindarThree) {
         try {
@@ -557,6 +681,14 @@
       if (currentMaskTexture) {
         currentMaskTexture.dispose();
         currentMaskTexture = null;
+      }
+      if (currentCardTexture) {
+        currentCardTexture.dispose();
+        currentCardTexture = null;
+      }
+      if (currentLumaMaskTexture) {
+        currentLumaMaskTexture.dispose();
+        currentLumaMaskTexture = null;
       }
       container.innerHTML = "";
       mindarThree = null;
@@ -603,9 +735,12 @@
         const anchor = mindarThree.addAnchor(0);
 
         const cardTexture = await buildCardTexture();
+        currentCardTexture = cardTexture;
         const surfaceShadeTexture = buildSurfaceShadeTexture();
         const roundedMaskTexture = buildRoundedMaskTexture();
         currentMaskTexture = roundedMaskTexture;
+        const whiteAreaMaskTexture = await buildWhiteAreaMaskTexture();
+        currentLumaMaskTexture = whiteAreaMaskTexture;
 
         const geometry = new THREE.PlaneGeometry(CARD_W, CARD_H);
         cardMaterial = new THREE.MeshBasicMaterial({
@@ -653,7 +788,8 @@
         cardGroup.add(darkPlane);
 
         tintMaterial = new THREE.MeshBasicMaterial({
-          map: roundedMaskTexture,
+          alphaMap: roundedMaskTexture,
+          map: whiteAreaMaskTexture,
           color: tintColorHex,
           transparent: true,
           opacity: tintOpacityBase,
