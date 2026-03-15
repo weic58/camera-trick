@@ -495,7 +495,7 @@
       const innerY = border;
       const innerW = cw - border * 2;
       const innerH = ch - border * 2;
-      const innerRadius = Math.max(8, radius - border * 1.5);
+      const innerRadius = Math.max(8, radius - border * 2.0);
 
       // Inner artwork mask: only white / pale regions should be warmed.
       const innerCanvas = document.createElement("canvas");
@@ -566,7 +566,7 @@
       const innerY = border;
       const innerW = cw - border * 2;
       const innerH = ch - border * 2;
-      const innerRadius = Math.max(8, Math.round(ch * 0.07) - border * 1.5);
+      const innerRadius = Math.max(8, Math.round(ch * 0.07) - border * 2.0);
 
       const innerCanvas = document.createElement("canvas");
       innerCanvas.width = innerW;
