@@ -497,11 +497,15 @@
 
       const border = Math.round(ch * 0.035);
       const radius = Math.round(ch * 0.07);
-      const innerX = border;
-      const innerY = border;
-      const innerW = cw - border * 2;
-      const innerH = ch - border * 2;
-      const innerRadius = Math.max(8, radius - border * 0.6);
+
+      // overlap a tiny bit into the inner area so no black seam shows between layers
+      const overlap = Math.max(2, Math.round(ch * 0.004));
+
+      const innerX = border - overlap;
+      const innerY = border - overlap;
+      const innerW = cw - (border - overlap) * 2;
+      const innerH = ch - (border - overlap) * 2;
+      const innerRadius = Math.max(8, radius - border * 0.6 + overlap * 0.5);
 
       const canvas = document.createElement("canvas");
       canvas.width = cw;
@@ -509,12 +513,12 @@
       const ctx = canvas.getContext("2d");
       ctx.clearRect(0, 0, cw, ch);
 
-      // Fill full rounded card silhouette first
+      // full rounded card silhouette
       roundedRect(ctx, 0, 0, cw, ch, radius);
       ctx.fillStyle = "rgba(255,255,255,1)";
       ctx.fill();
 
-      // Remove the inner artwork area so only the white frame remains
+      // carve out inner area with a tiny overlap so border tint slightly meets the inner tint
       ctx.save();
       ctx.globalCompositeOperation = "destination-out";
       roundedRect(ctx, innerX, innerY, innerW, innerH, innerRadius);
@@ -535,11 +539,12 @@
 
       const border = Math.round(ch * 0.035);
       const radius = Math.round(ch * 0.07);
-      const innerX = border;
-      const innerY = border;
-      const innerW = cw - border * 2;
-      const innerH = ch - border * 2;
-      const innerRadius = Math.max(8, radius - border * 0.6);
+      const overlap = Math.max(2, Math.round(ch * 0.003));
+      const innerX = border - overlap;
+      const innerY = border - overlap;
+      const innerW = cw - (border - overlap) * 2;
+      const innerH = ch - (border - overlap) * 2;
+      const innerRadius = Math.max(8, radius - border * 0.6 + overlap * 0.4);
 
       const innerCanvas = document.createElement("canvas");
       innerCanvas.width = innerW;
