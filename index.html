@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
   <title>Camera</title>
+  <link rel="icon" href="data:,">
 
   <script type="importmap">
   {
@@ -489,6 +490,7 @@
       return texture;
     }
 
+
     function buildBlurredCardTexture(blurPx = 0) {
       if (!originalCardImage) return null;
       const img = originalCardImage;
@@ -522,7 +524,6 @@
       texture.needsUpdate = true;
       return texture;
     }
-
     function buildSurfaceShadeTexture() {
       const cw = 1024, ch = 728;
       const canvas = document.createElement("canvas");
@@ -545,41 +546,6 @@
       texture.needsUpdate = true;
       return texture;
     }
-
-    function buildBlurredCardTexture(blurPx = 0) {
-      if (!originalCardImage) return null;
-      const img = originalCardImage;
-      const cw = 1400;
-      const ch = Math.round(cw * img.height / img.width);
-      const canvas = document.createElement("canvas");
-      canvas.width = cw;
-      canvas.height = ch;
-      const ctx = canvas.getContext("2d");
-
-      const radius = Math.round(ch * 0.07);
-      const border = Math.round(ch * 0.035);
-      const innerX = border;
-      const innerY = border;
-      const innerW = cw - border * 2;
-      const innerH = ch - border * 2;
-
-      roundedRect(ctx, 0, 0, cw, ch, radius);
-      ctx.fillStyle = "#ffffff";
-      ctx.fill();
-
-      ctx.save();
-      roundedRect(ctx, innerX, innerY, innerW, innerH, Math.max(8, radius - border*0.6));
-      ctx.clip();
-      ctx.filter = `blur(${blurPx}px)`;
-      ctx.drawImage(img, innerX, innerY, innerW, innerH);
-      ctx.restore();
-
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.needsUpdate = true;
-      return texture;
-    }
-
     function buildRoundedMaskTexture() {
       const cw = 1024, ch = 728;
       const canvas = document.createElement("canvas");
@@ -596,41 +562,6 @@
       texture.needsUpdate = true;
       return texture;
     }
-
-    function buildBlurredCardTexture(blurPx = 0) {
-      if (!originalCardImage) return null;
-      const img = originalCardImage;
-      const cw = 1400;
-      const ch = Math.round(cw * img.height / img.width);
-      const canvas = document.createElement("canvas");
-      canvas.width = cw;
-      canvas.height = ch;
-      const ctx = canvas.getContext("2d");
-
-      const radius = Math.round(ch * 0.07);
-      const border = Math.round(ch * 0.035);
-      const innerX = border;
-      const innerY = border;
-      const innerW = cw - border * 2;
-      const innerH = ch - border * 2;
-
-      roundedRect(ctx, 0, 0, cw, ch, radius);
-      ctx.fillStyle = "#ffffff";
-      ctx.fill();
-
-      ctx.save();
-      roundedRect(ctx, innerX, innerY, innerW, innerH, Math.max(8, radius - border*0.6));
-      ctx.clip();
-      ctx.filter = `blur(${blurPx}px)`;
-      ctx.drawImage(img, innerX, innerY, innerW, innerH);
-      ctx.restore();
-
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.needsUpdate = true;
-      return texture;
-    }
-
     function roundedRect(ctx, x, y, w, h, r) {
       const rr = Math.min(r, w/2, h/2);
       ctx.beginPath();
