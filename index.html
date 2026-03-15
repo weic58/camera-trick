@@ -49,7 +49,7 @@
 
     .topBlack{
       position:absolute; left:0; right:0; top:0;
-      height:max(72px, 10.5vh);
+      height:max(54px, 7.8vh);
       background:#000;
       z-index:0;
     }
@@ -61,8 +61,8 @@
     }
 
     .topFade{
-      position:absolute;left:0;right:0;top:0;height:15vh;min-height:76px;
-      background:linear-gradient(to bottom,rgba(0,0,0,.86),rgba(0,0,0,.40),rgba(0,0,0,0));
+      position:absolute;left:0;right:0;top:0;height:12.5vh;min-height:58px;
+      background:linear-gradient(to bottom,rgba(0,0,0,.88),rgba(0,0,0,.40),rgba(0,0,0,0));
       z-index:1;
     }
     .bottomFade{
@@ -74,7 +74,7 @@
     .cameraGuide{
       position:absolute;
       left:0; right:0;
-      top:max(72px, 10.5vh);
+      top:max(54px, 7.8vh);
       bottom:max(170px, 24vh);
       z-index:2;
       overflow:hidden;
@@ -221,11 +221,11 @@
     .loader.hidden{display:none}
 
     @media (max-height: 740px){
-      .topBlack{height:max(62px, 9vh)}
+      .topBlack{height:max(46px, 6.6vh)}
       .bottomBlack{height:max(150px, 22vh)}
-      .topFade{min-height:64px}
+      .topFade{min-height:50px}
       .bottomFade{min-height:150px;height:26vh}
-      .cameraGuide{top:max(62px, 9vh); bottom:max(150px, 22vh)}
+      .cameraGuide{top:max(46px, 6.6vh); bottom:max(150px, 22vh)}
       .bottomUI{padding:0 14px calc(var(--bottom-safe) + 4px);gap:8px}
       .mode{min-width:76px;height:34px;font-size:14px}
       .shutterRow{grid-template-columns:56px 1fr 56px;min-height:86px}
@@ -282,11 +282,11 @@
       <div class="settingsTitle">牌面調整</div>
       <div class="settingsRow">
         <label><span>牌面明暗</span><span id="shadowValue">1.00</span></label>
-        <input id="shadowSlider" type="range" min="0.35" max="1.30" step="0.01" value="1.00">
+        <input id="shadowSlider" type="range" min="0.15" max="1.60" step="0.01" value="1.00">
       </div>
       <div class="settingsRow">
         <label><span>顏色濾鏡</span><span id="tintValue">0.00</span></label>
-        <input id="tintSlider" type="range" min="0" max="0.50" step="0.01" value="0.00">
+        <input id="tintSlider" type="range" min="0" max="0.60" step="0.01" value="0.00">
       </div>
       <div class="settingsRow">
         <label><span>濾鏡顏色</span><input id="tintColor" type="color" value="#ffffff" style="width:38px;height:24px;background:transparent;border:none;padding:0"></label>
@@ -362,9 +362,9 @@
 
     const CARD_W = 1.11;
     const CARD_H = 0.79;
-    let brightnessBase = 1.00;
-    let tintOpacityBase = 0.00;
-    let tintColorHex = "#ffffff";
+    let brightnessBase = parseFloat(localStorage.getItem("camera_brightness") ?? "1.00");
+    let tintOpacityBase = parseFloat(localStorage.getItem("camera_tint_opacity") ?? "0.00");
+    let tintColorHex = localStorage.getItem("camera_tint_color") ?? "#ffffff";
 
     function setFound(found){
       statusDot.style.background = found ? "#44d16b" : "#ff4d4d";
@@ -373,21 +373,44 @@
         : "0 0 8px rgba(255,77,77,.55)";
     }
 
+    function persistSettings(){
+      localStorage.setItem("camera_brightness", String(brightnessBase));
+      localStorage.setItem("camera_tint_opacity", String(tintOpacityBase));
+      localStorage.setItem("camera_tint_color", tintColorHex);
+    }
+
     function updateMaterialControls(){
+      shadowSlider.value = String(brightnessBase);
+      tintSlider.value = String(tintOpacityBase);
+      tintColorInput.value = tintColorHex;
       shadowValue.textContent = brightnessBase.toFixed(2);
       tintValue.textContent = tintOpacityBase.toFixed(2);
+
       if (shadeMaterial) {
         if (brightnessBase <= 1) {
           shadeMaterial.color.set("#000000");
-          shadeMaterial.opacity = fadeAlpha * (1 - brightnessBase) * 0.95;
+          shadeMaterial.opacity = fadeAlpha * (1 - brightnessBase) * 1.55;
         } else {
           shadeMaterial.color.set("#ffffff");
-          shadeMaterial.opacity = fadeAlpha * (brightnessBase - 1) * 0.45;
+          shadeMaterial.opacity = fadeAlpha * (brightnessBase - 1) * 0.95;
         }
       }
       if (tintMaterial) {
         tintMaterial.opacity = fadeAlpha * tintOpacityBase;
         tintMaterial.color.set(tintColorHex);
+      }
+    }
+
+    async function applyWideFrontCameraIfPossible() {
+      try {
+        const track = mindarThree?.video?.srcObject?.getVideoTracks?.()[0];
+        if (!track || !track.getCapabilities) return;
+        const caps = track.getCapabilities();
+        if (caps.zoom && typeof caps.zoom.min === "number") {
+          await track.applyConstraints({ advanced: [{ zoom: caps.zoom.min }] });
+        }
+      } catch (e) {
+        console.warn("front camera zoom min not applied", e);
       }
     }
 
@@ -444,10 +467,10 @@
 
       ctx.clearRect(0,0,cw,ch);
       const grad = ctx.createLinearGradient(0, 0, cw, ch);
-      grad.addColorStop(0, "rgba(255,255,255,0.10)");
-      grad.addColorStop(0.18, "rgba(255,255,255,0.03)");
+      grad.addColorStop(0, "rgba(255,255,255,0.16)");
+      grad.addColorStop(0.18, "rgba(255,255,255,0.05)");
       grad.addColorStop(0.45, "rgba(255,255,255,0)");
-      grad.addColorStop(1, "rgba(0,0,0,0.18)");
+      grad.addColorStop(1, "rgba(0,0,0,0.24)");
       roundedRect(ctx, 0, 0, cw, ch, 54);
       ctx.fillStyle = grad;
       ctx.fill();
@@ -585,6 +608,7 @@
         anchor.onTargetLost = () => setFound(false);
 
         await mindarThree.start();
+        if (currentFacingFront) await applyWideFrontCameraIfPossible();
         loader.classList.add("hidden");
 
         renderer.setAnimationLoop(() => {
@@ -618,6 +642,7 @@
           await mindarThree.switchCamera();
           currentFacingFront = !currentFacingFront;
           container.classList.toggle("mirror", currentFacingFront);
+          if (currentFacingFront) await applyWideFrontCameraIfPossible();
         } else {
           currentFacingFront = !currentFacingFront;
           await startAR();
@@ -637,14 +662,17 @@
 
     shadowSlider.addEventListener("input", () => {
       brightnessBase = parseFloat(shadowSlider.value);
+      persistSettings();
       updateMaterialControls();
     });
     tintSlider.addEventListener("input", () => {
       tintOpacityBase = parseFloat(tintSlider.value);
+      persistSettings();
       updateMaterialControls();
     });
     tintColorInput.addEventListener("input", () => {
       tintColorHex = tintColorInput.value;
+      persistSettings();
       updateMaterialControls();
     });
     document.querySelectorAll(".presetColor").forEach((btn) => {
@@ -652,6 +680,7 @@
         e.stopPropagation();
         tintColorHex = btn.dataset.color;
         tintColorInput.value = tintColorHex;
+        persistSettings();
         updateMaterialControls();
       });
     });
@@ -661,6 +690,7 @@
     }, true);
 
     setFound(false);
+    updateMaterialControls();
     await startAR();
     container.classList.toggle("mirror", currentFacingFront);
   </script>
