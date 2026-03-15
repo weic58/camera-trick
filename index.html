@@ -285,7 +285,7 @@
       <div class="settingsTitle">牌面調整</div>
       <div class="settingsRow">
         <label><span>牌面明暗</span><span id="shadowValue">1.00</span></label>
-        <input id="shadowSlider" type="range" min="0.15" max="1.60" step="0.01" value="1.00">
+        <input id="shadowSlider" type="range" min="0.00" max="2.50" step="0.01" value="1.00">
       </div>
       <div class="settingsRow">
         <label><span>顏色濾鏡</span><span id="tintValue">0.00</span></label>
@@ -345,11 +345,9 @@
     const settingsPanel = document.getElementById("settingsPanel");
     const shadowSlider = document.getElementById("shadowSlider");
     const tintSlider = document.getElementById("tintSlider");
-    const featherSlider = document.getElementById("featherSlider");
     const tintColorInput = document.getElementById("tintColor");
     const shadowValue = document.getElementById("shadowValue");
     const tintValue = document.getElementById("tintValue");
-    const featherValue = document.getElementById("featherValue");
 
     let fadeAlpha = 1;
     let fadeAnimating = false;
@@ -394,7 +392,7 @@
       if (shadeMaterial) {
         if (brightnessBase <= 1) {
           shadeMaterial.color.set("#000000");
-          shadeMaterial.opacity = fadeAlpha * (1 - brightnessBase) * 1.55;
+          shadeMaterial.opacity = fadeAlpha * (1 - brightnessBase) * 2.55;
         } else {
           shadeMaterial.color.set("#ffffff");
           shadeMaterial.opacity = fadeAlpha * (brightnessBase - 1) * 0.95;
@@ -613,7 +611,7 @@
         anchor.group.add(surfacePlane);
 
         tintMaterial = new THREE.MeshBasicMaterial({
-          map: featherMaskTexture,
+          map: roundedMaskTexture,
           color: tintColorHex,
           transparent: true,
           opacity: tintOpacityBase,
