@@ -4,7 +4,6 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
   <title>Camera</title>
-  <!-- version: v10 clean black overlay -->
 
   <script type="importmap">
   {
@@ -285,8 +284,8 @@
     <div class="settingsPanel" id="settingsPanel">
       <div class="settingsTitle">牌面調整</div>
       <div class="settingsRow">
-        <label><span>牌面明暗</span><span id="shadowValue">1.00</span></label>
-        <input id="shadowSlider" type="range" min="0.00" max="5.00" step="0.01" value="2.50">
+        <label><span>牌面暗度</span><span id="shadowValue">0.22</span></label>
+        <input id="shadowSlider" type="range" min="0.00" max="1.00" step="0.01" value="0.22">
       </div>
       <div class="settingsRow">
         <label><span>顏色濾鏡</span><span id="tintValue">0.00</span></label>
@@ -391,10 +390,24 @@
       shadowValue.textContent = darkOpacityBase.toFixed(2);
       tintValue.textContent = tintOpacityBase.toFixed(2);
 
+      if (shadeMaterial) shadeMaterial.opacity = fadeAlpha * 0.10;
       if (darkMaterial) darkMaterial.opacity = fadeAlpha * darkOpacityBase;
       if (tintMaterial) {
         tintMaterial.opacity = fadeAlpha * tintOpacityBase;
         tintMaterial.color.set(tintColorHex);
+      }
+    }
+
+    async function applyWideFrontCameraIfPossible() {
+      try {
+        const track = mindarThree?.video?.srcObject?.getVideoTracks?.()[0];
+        if (!track || !track.getCapabilities) return;
+        const caps = track.getCapabilities();
+        if (caps.zoom && typeof caps.zoom.min === "number") {
+          await track.applyConstraints({ advanced: [{ zoom: caps.zoom.min }] });
+        }
+      } catch (e) {
+        console.warn("front camera zoom min not applied", e);
       }
     }
 
@@ -579,18 +592,32 @@
 
         shadeMaterial = new THREE.MeshBasicMaterial({
           map: surfaceShadeTexture,
-          color: "#000000",
           transparent: true,
-          opacity: 0,
+          opacity: 0.10,
           side: THREE.DoubleSide,
           depthWrite: false
         });
-        const surfacePlane = new THREE.Mesh(
+        const sheenPlane = new THREE.Mesh(
           new THREE.PlaneGeometry(CARD_W, CARD_H),
           shadeMaterial
         );
-        surfacePlane.position.set(0, 0, 0.012);
-        anchor.group.add(surfacePlane);
+        sheenPlane.position.set(0, 0, 0.0115);
+        anchor.group.add(sheenPlane);
+
+        darkMaterial = new THREE.MeshBasicMaterial({
+          map: roundedMaskTexture,
+          color: "#000000",
+          transparent: true,
+          opacity: darkOpacityBase,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        const darkPlane = new THREE.Mesh(
+          new THREE.PlaneGeometry(CARD_W, CARD_H),
+          darkMaterial
+        );
+        darkPlane.position.set(0, 0, 0.0124);
+        anchor.group.add(darkPlane);
 
         tintMaterial = new THREE.MeshBasicMaterial({
           map: roundedMaskTexture,
