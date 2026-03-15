@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
   <title>Camera</title>
-  <!-- version: split warm tint layers (border + white area + dark area) -->
+  <!-- version: unified warm mask + separate dark-area warm tint -->
 
   <script type="importmap">
   {
@@ -325,14 +325,12 @@
     let cardMaterial = null;
     let shadeMaterial = null;
     let darkMaterial = null;
-    let borderTintMaterial = null;
     let tintMaterial = null;
     let darkTintMaterial = null;
     let currentFacingFront = false;
     let currentMaskTexture = null;
     let currentCardTexture = null;
     let currentLumaMaskTexture = null;
-    let currentBorderFrameMaskTexture = null;
     let currentDarkLumaMaskTexture = null;
     let cardGroup = null;
 
@@ -385,10 +383,6 @@
 
       if (shadeMaterial) shadeMaterial.opacity = fadeAlpha * 0.08;
       if (darkMaterial) darkMaterial.opacity = fadeAlpha * darkOpacityBase;
-      if (borderTintMaterial) {
-        borderTintMaterial.opacity = fadeAlpha * tintOpacityBase;
-        borderTintMaterial.color.set(tintColorHex);
-      }
       if (tintMaterial) {
         tintMaterial.opacity = fadeAlpha * tintOpacityBase;
         tintMaterial.color.set(tintColorHex);
@@ -490,46 +484,6 @@
       return texture;
     }
 
-    async function buildBorderFrameMaskTexture() {
-      const img = await loadImage("./card.png");
-      const cw = 1400;
-      const ch = Math.round(cw * img.height / img.width);
-
-      const border = Math.round(ch * 0.035);
-      const radius = Math.round(ch * 0.07);
-
-      // conservative overlap: just enough to hide seam, not enough to poke corners out
-      const overlap = 2;
-
-      const innerX = border - overlap;
-      const innerY = border - overlap;
-      const innerW = cw - (border - overlap) * 2;
-      const innerH = ch - (border - overlap) * 2;
-      const innerRadius = Math.max(8, radius - border * 0.6 + overlap * 0.2);
-
-      const canvas = document.createElement("canvas");
-      canvas.width = cw;
-      canvas.height = ch;
-      const ctx = canvas.getContext("2d");
-      ctx.clearRect(0, 0, cw, ch);
-
-      roundedRect(ctx, 0, 0, cw, ch, radius);
-      ctx.fillStyle = "rgba(255,255,255,1)";
-      ctx.fill();
-
-      ctx.save();
-      ctx.globalCompositeOperation = "destination-out";
-      roundedRect(ctx, innerX, innerY, innerW, innerH, innerRadius);
-      ctx.fillStyle = "rgba(255,255,255,1)";
-      ctx.fill();
-      ctx.restore();
-
-      const texture = new THREE.CanvasTexture(canvas);
-      texture.colorSpace = THREE.SRGBColorSpace;
-      texture.needsUpdate = true;
-      return texture;
-    }
-
     async function buildWhiteAreaMaskTexture() {
       const img = await loadImage("./card.png");
       const cw = 1400;
@@ -537,13 +491,13 @@
 
       const border = Math.round(ch * 0.035);
       const radius = Math.round(ch * 0.07);
-      const overlap = 1;
-      const innerX = border - overlap;
-      const innerY = border - overlap;
-      const innerW = cw - (border - overlap) * 2;
-      const innerH = ch - (border - overlap) * 2;
-      const innerRadius = Math.max(8, radius - border * 0.6 + overlap * 0.2);
+      const innerX = border;
+      const innerY = border;
+      const innerW = cw - border * 2;
+      const innerH = ch - border * 2;
+      const innerRadius = Math.max(8, radius - border * 0.6);
 
+      // Inner artwork mask: only white / pale regions should be warmed.
       const innerCanvas = document.createElement("canvas");
       innerCanvas.width = innerW;
       innerCanvas.height = innerH;
@@ -585,6 +539,12 @@
       const fctx = finalCanvas.getContext("2d");
       fctx.clearRect(0, 0, cw, ch);
 
+      // Warm the whole card base first so white border naturally gets tint.
+      fctx.fillStyle = "rgba(255,255,255,1)";
+      fctx.fillRect(0, 0, cw, ch);
+
+      // Replace only the inner artwork area with the white-only mask so black symbols stay mostly untouched.
+      fctx.clearRect(innerX, innerY, innerW, innerH);
       fctx.save();
       roundedRect(fctx, innerX, innerY, innerW, innerH, innerRadius);
       fctx.clip();
@@ -747,14 +707,6 @@
         tintMaterial.needsUpdate = true;
         if (oldWhiteMask) oldWhiteMask.dispose();
       }
-      if (borderTintMaterial) {
-        const newBorderMask = await buildBorderFrameMaskTexture();
-        const oldBorderMask = currentBorderFrameMaskTexture;
-        currentBorderFrameMaskTexture = newBorderMask;
-        borderTintMaterial.map = newBorderMask;
-        borderTintMaterial.needsUpdate = true;
-        if (oldBorderMask) oldBorderMask.dispose();
-      }
       if (darkTintMaterial) {
         const newDarkMask = await buildDarkAreaMaskTexture();
         const oldDarkMask = currentDarkLumaMaskTexture;
@@ -786,10 +738,6 @@
         currentLumaMaskTexture.dispose();
         currentLumaMaskTexture = null;
       }
-      if (currentBorderFrameMaskTexture) {
-        currentBorderFrameMaskTexture.dispose();
-        currentBorderFrameMaskTexture = null;
-      }
       if (currentDarkLumaMaskTexture) {
         currentDarkLumaMaskTexture.dispose();
         currentDarkLumaMaskTexture = null;
@@ -802,7 +750,6 @@
       cardMaterial = null;
       shadeMaterial = null;
       darkMaterial = null;
-      borderTintMaterial = null;
       tintMaterial = null;
       darkTintMaterial = null;
       cardGroup = null;
@@ -847,8 +794,6 @@
         currentMaskTexture = roundedMaskTexture;
         const whiteAreaMaskTexture = await buildWhiteAreaMaskTexture();
         currentLumaMaskTexture = whiteAreaMaskTexture;
-        const borderFrameMaskTexture = await buildBorderFrameMaskTexture();
-        currentBorderFrameMaskTexture = borderFrameMaskTexture;
         const darkAreaMaskTexture = await buildDarkAreaMaskTexture();
         currentDarkLumaMaskTexture = darkAreaMaskTexture;
 
@@ -890,19 +835,6 @@
         const darkPlane = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), darkMaterial);
         darkPlane.position.set(0, 0, 0.0124);
         cardGroup.add(darkPlane);
-
-        borderTintMaterial = new THREE.MeshBasicMaterial({
-          alphaMap: roundedMaskTexture,
-          map: borderFrameMaskTexture,
-          color: tintColorHex,
-          transparent: true,
-          opacity: tintOpacityBase,
-          side: THREE.DoubleSide,
-          depthWrite: false
-        });
-        const borderTintPlane = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), borderTintMaterial);
-        borderTintPlane.position.set(0, 0, 0.01285);
-        cardGroup.add(borderTintPlane);
 
         tintMaterial = new THREE.MeshBasicMaterial({
           alphaMap: roundedMaskTexture,
