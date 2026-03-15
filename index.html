@@ -32,30 +32,56 @@
     }
     body{position:relative}
     #ar-container{
-      position:fixed; inset:0; z-index:1; overflow:hidden; background:#000;
+      position:fixed;
+      inset:0;
+      z-index:1;
+      overflow:hidden;
+      background:#000;
       transform-origin:center center;
     }
-    #ar-container.mirror{ transform:scaleX(-1); }
+    #ar-container.mirror{
+      transform:scaleX(-1);
+    }
+    #ar-container.switching{
+      opacity:0;
+    }
 
-    .overlay-ui{ position:fixed; inset:0; pointer-events:none; z-index:20; }
+    .overlay-ui{
+      position:fixed; inset:0; pointer-events:none; z-index:20;
+    }
+
     .topBlack{
-      position:absolute; left:0; right:0; top:0; height:max(54px, 7.8vh); background:#000; z-index:0;
+      position:absolute; left:0; right:0; top:0;
+      height:max(54px, 7.8vh);
+      background:#000;
+      z-index:0;
     }
     .bottomBlack{
-      position:absolute; left:0; right:0; bottom:0; height:max(170px, 24vh); background:#000; z-index:0;
+      position:absolute; left:0; right:0; bottom:0;
+      height:max(170px, 24vh);
+      background:#000;
+      z-index:0;
     }
+
     .topFade{
       position:absolute;left:0;right:0;top:0;height:12.5vh;min-height:58px;
-      background:linear-gradient(to bottom,rgba(0,0,0,.88),rgba(0,0,0,.40),rgba(0,0,0,0)); z-index:1;
+      background:linear-gradient(to bottom,rgba(0,0,0,.88),rgba(0,0,0,.40),rgba(0,0,0,0));
+      z-index:1;
     }
     .bottomFade{
       position:absolute;left:0;right:0;bottom:0;height:30vh;min-height:180px;
-      background:linear-gradient(to top,rgba(0,0,0,.98),rgba(0,0,0,.82),rgba(0,0,0,0)); z-index:1;
+      background:linear-gradient(to top,rgba(0,0,0,.98),rgba(0,0,0,.82),rgba(0,0,0,0));
+      z-index:1;
     }
 
     .cameraGuide{
-      position:absolute; left:0; right:0; top:max(54px, 7.8vh); bottom:max(170px, 24vh);
-      z-index:2; overflow:hidden; pointer-events:none;
+      position:absolute;
+      left:0; right:0;
+      top:max(54px, 7.8vh);
+      bottom:max(170px, 24vh);
+      z-index:2;
+      overflow:hidden;
+      pointer-events:none;
     }
     .gridline{position:absolute;background:rgba(255,255,255,.30);}
     .v1,.v2{top:0;bottom:0;width:1px}
@@ -73,90 +99,129 @@
     .focusCross::after{top:0;bottom:0;left:20px;width:2px}
 
     .statusDot{
-      position:absolute;left:14px;top:var(--top-safe); width:11px;height:11px;border-radius:50%;
-      background:#ff4c4c; box-shadow:0 0 8px rgba(255,76,76,.5); border:1px solid rgba(255,255,255,.28); z-index:5;
+      position:absolute;left:14px;top:var(--top-safe);
+      width:11px;height:11px;border-radius:50%;
+      background:#ff4c4c;
+      box-shadow:0 0 8px rgba(255,76,76,.5);
+      border:1px solid rgba(255,255,255,.28);
+      z-index:5;
     }
 
     .toolbar{
       position:absolute;top:var(--top-safe);right:14px;z-index:5;
-      display:flex;gap:10px;align-items:center;pointer-events:none;
+      display:flex;gap:10px;align-items:center;
+      pointer-events:none;
     }
     .toolbar .pill{
-      height:46px;padding:0 10px;border-radius:23px; display:flex;align-items:center;gap:4px;
-      background:var(--ui-bg);border:1px solid var(--ui-border); backdrop-filter:blur(10px);
+      height:46px;padding:0 10px;border-radius:23px;
+      display:flex;align-items:center;gap:4px;
+      background:var(--ui-bg);border:1px solid var(--ui-border);
+      backdrop-filter:blur(10px);
     }
-    .iconOnly{ width:34px;height:34px;border-radius:17px; display:grid;place-items:center;background:transparent;color:#fff; }
-    .iconOnly svg{ width:21px;height:21px }
+    .iconOnly{
+      width:34px;height:34px;border-radius:17px;
+      display:grid;place-items:center;background:transparent;color:#fff;
+    }
+    .iconOnly svg{width:21px;height:21px}
 
     .settingsPanel{
-      position:absolute; left:14px; bottom:calc(var(--bottom-safe) + 82px); z-index:30;
-      width:min(270px, 64vw); padding:12px; border-radius:16px;
-      background:rgba(0,0,0,.48); border:1px solid rgba(255,255,255,.12);
-      backdrop-filter:blur(10px); pointer-events:auto; display:none;
+      position:absolute;
+      left:14px;
+      bottom:calc(var(--bottom-safe) + 82px);
+      z-index:30;
+      width:min(270px, 64vw);
+      padding:12px;
+      border-radius:16px;
+      background:rgba(0,0,0,.48);
+      border:1px solid rgba(255,255,255,.12);
+      backdrop-filter:blur(10px);
+      pointer-events:auto;
+      display:none;
     }
     .settingsPanel.open{display:block}
-    .settingsTitle{ font-size:13px; font-weight:700; margin-bottom:10px; color:#fff; }
-    .settingsRow{ margin-bottom:10px }
-    .settingsRow label{
-      display:flex; justify-content:space-between; align-items:center; gap:10px;
-      margin-bottom:4px; font-size:12px; color:rgba(255,255,255,.92);
+    .settingsTitle{
+      font-size:13px;
+      font-weight:700;
+      margin-bottom:10px;
+      color:#fff;
     }
-    .settingsRow input[type="range"]{ width:100% }
-    .colorRow{ display:flex; gap:8px; margin-top:6px }
+    .settingsRow{margin-bottom:10px}
+    .settingsRow label{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      margin-bottom:4px;
+      font-size:12px;
+      color:rgba(255,255,255,.92);
+    }
+    .settingsRow input[type="range"]{width:100%}
+    .colorRow{display:flex;gap:8px;margin-top:6px}
     .presetColor{
-      width:24px;height:24px;border-radius:50%; border:1px solid rgba(255,255,255,.22);
-      cursor:pointer; pointer-events:auto; padding:0;
+      width:24px;height:24px;border-radius:50%;
+      border:1px solid rgba(255,255,255,.22);
+      cursor:pointer;pointer-events:auto;padding:0;
     }
 
     .bottomUI{
-      position:absolute;left:0;right:0;bottom:0; padding:0 18px calc(var(--bottom-safe) + 8px);
-      display:flex;flex-direction:column;gap:10px; z-index:5;
+      position:absolute;left:0;right:0;bottom:0;
+      padding:0 18px calc(var(--bottom-safe) + 8px);
+      display:flex;flex-direction:column;gap:10px;
+      z-index:5;
     }
-    .modeRow{ display:flex;justify-content:center;align-items:center;margin-bottom:2px; }
+    .modeRow{
+      display:flex;justify-content:center;align-items:center;margin-bottom:2px;
+    }
     .modePill{
       display:flex;align-items:center;gap:2px;padding:4px;border-radius:24px;
-      background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.10); backdrop-filter:blur(10px);
+      background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.10);
+      backdrop-filter:blur(10px);
     }
     .mode{
       min-width:84px;height:38px;border-radius:19px;display:grid;place-items:center;
       font-size:15px;font-weight:600;color:var(--ui-soft);
     }
     .mode.active{
-      background:rgba(255,255,255,.11);color:var(--yellow); box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+      background:rgba(255,255,255,.11);color:var(--yellow);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
     }
 
     .shutterRow{
-      display:grid;grid-template-columns:64px 1fr 64px;align-items:center; padding:0 0 2px; min-height:98px;
+      display:grid;grid-template-columns:64px 1fr 64px;align-items:center;
+      padding:0 0 2px; min-height:98px;
     }
-    .thumbButton{ pointer-events:auto; background:none;border:none;padding:0;justify-self:start;cursor:pointer; }
+    .thumbButton{
+      pointer-events:auto;
+      background:none;border:none;padding:0;justify-self:start;cursor:pointer;
+    }
     .thumb{
-      width:54px;height:54px;border-radius:50%;overflow:hidden; border:1px solid rgba(255,255,255,.18);
-      background:#555; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+      width:54px;height:54px;border-radius:50%;overflow:hidden;
+      border:1px solid rgba(255,255,255,.18);background:#555;
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
     }
     .thumb img{display:block;width:100%;height:100%;object-fit:cover}
     #shutter{
-      pointer-events:auto; justify-self:center;width:84px;height:84px;border-radius:50%;
-      border:none;outline:none;cursor:pointer; background:#f6f6f6;
+      pointer-events:auto;
+      justify-self:center;width:84px;height:84px;border-radius:50%;border:none;outline:none;cursor:pointer;
+      background:#f6f6f6;
       box-shadow:0 0 0 6px rgba(255,255,255,.26), inset 0 0 0 2px rgba(0,0,0,.05);
     }
     #switchCamera{
-      pointer-events:auto; justify-self:end;width:56px;height:56px;border-radius:50%;
-      border:none;outline:none;cursor:pointer; display:grid;place-items:center;
-      background:rgba(255,255,255,.12); backdrop-filter:blur(10px);
-      box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); color:#fff;
+      pointer-events:auto;
+      justify-self:end;width:56px;height:56px;border-radius:50%;border:none;outline:none;cursor:pointer;
+      display:grid;place-items:center;background:rgba(255,255,255,.12);
+      backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);
+      color:#fff;
     }
     #switchCamera svg{width:32px;height:32px}
     #switchCamera:active,#shutter:active{transform:scale(.96)}
 
-    .loader, .switchFade{
+    .loader{
       position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-      background:#000; z-index:40; color:white; font-size:16px; text-align:center; padding:24px;
+      background:rgba(0,0,0,.85); z-index:40; color:white; font-size:16px;
+      text-align:center; padding:24px;
     }
     .loader.hidden{display:none}
-    .switchFade{
-      opacity:0; pointer-events:none; z-index:35; transition:opacity 0.18s ease;
-    }
-    .switchFade.show{ opacity:1; pointer-events:auto; }
 
     @media (max-height: 740px){
       .topBlack{height:max(46px, 6.6vh)}
@@ -176,7 +241,6 @@
 </head>
 <body>
   <div id="loader" class="loader">載入中…</div>
-  <div id="switchFade" class="switchFade"></div>
   <div id="ar-container"></div>
 
   <div class="overlay-ui">
@@ -221,11 +285,7 @@
       <div class="settingsTitle">牌面調整</div>
       <div class="settingsRow">
         <label><span>牌面明暗</span><span id="shadowValue">1.00</span></label>
-        <input id="shadowSlider" type="range" min="0.00" max="1.80" step="0.01" value="1.00">
-      </div>
-      <div class="settingsRow">
-        <label><span>模糊</span><span id="blurValue">0.0</span></label>
-        <input id="blurSlider" type="range" min="0" max="20" step="0.1" value="0.0">
+        <input id="shadowSlider" type="range" min="0.15" max="1.60" step="0.01" value="1.00">
       </div>
       <div class="settingsRow">
         <label><span>顏色濾鏡</span><span id="tintValue">0.00</span></label>
@@ -277,7 +337,6 @@
     import { MindARThree } from "mindar-image-three";
 
     const loader = document.getElementById("loader");
-    const switchFade = document.getElementById("switchFade");
     const statusDot = document.getElementById("statusDot");
     const shutter = document.getElementById("shutter");
     const switchCamera = document.getElementById("switchCamera");
@@ -285,11 +344,9 @@
     const openSettings = document.getElementById("openSettings");
     const settingsPanel = document.getElementById("settingsPanel");
     const shadowSlider = document.getElementById("shadowSlider");
-    const blurSlider = document.getElementById("blurSlider");
     const tintSlider = document.getElementById("tintSlider");
     const tintColorInput = document.getElementById("tintColor");
     const shadowValue = document.getElementById("shadowValue");
-    const blurValue = document.getElementById("blurValue");
     const tintValue = document.getElementById("tintValue");
 
     let fadeAlpha = 1;
@@ -305,13 +362,10 @@
     let shadeMaterial = null;
     let tintMaterial = null;
     let currentFacingFront = false;
-    let originalCardImage = null;
-    let currentCardTexture = null;
 
     const CARD_W = 1.11;
     const CARD_H = 0.79;
     let brightnessBase = parseFloat(localStorage.getItem("camera_brightness") ?? "1.00");
-    let blurBase = parseFloat(localStorage.getItem("camera_blur") ?? "0.00");
     let tintOpacityBase = parseFloat(localStorage.getItem("camera_tint_opacity") ?? "0.00");
     let tintColorHex = localStorage.getItem("camera_tint_color") ?? "#ffffff";
 
@@ -324,27 +378,24 @@
 
     function persistSettings(){
       localStorage.setItem("camera_brightness", String(brightnessBase));
-      localStorage.setItem("camera_blur", String(blurBase));
       localStorage.setItem("camera_tint_opacity", String(tintOpacityBase));
       localStorage.setItem("camera_tint_color", tintColorHex);
     }
 
     function updateMaterialControls(){
       shadowSlider.value = String(brightnessBase);
-      blurSlider.value = String(blurBase);
       tintSlider.value = String(tintOpacityBase);
       tintColorInput.value = tintColorHex;
       shadowValue.textContent = brightnessBase.toFixed(2);
-      blurValue.textContent = blurBase.toFixed(1);
       tintValue.textContent = tintOpacityBase.toFixed(2);
 
       if (shadeMaterial) {
         if (brightnessBase <= 1) {
           shadeMaterial.color.set("#000000");
-          shadeMaterial.opacity = Math.min(1.0, fadeAlpha * (1 - brightnessBase) * 6.0);
+          shadeMaterial.opacity = fadeAlpha * (1 - brightnessBase) * 1.55;
         } else {
           shadeMaterial.color.set("#ffffff");
-          shadeMaterial.opacity = Math.min(0.85, fadeAlpha * (brightnessBase - 1) * 1.35);
+          shadeMaterial.opacity = fadeAlpha * (brightnessBase - 1) * 0.95;
         }
       }
       if (tintMaterial) {
@@ -378,24 +429,8 @@
       img.src = src;
     });
 
-    function roundedRect(ctx, x, y, w, h, r) {
-      const rr = Math.min(r, w/2, h/2);
-      ctx.beginPath();
-      ctx.moveTo(x + rr, y);
-      ctx.lineTo(x + w - rr, y);
-      ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
-      ctx.lineTo(x + w, y + h - rr);
-      ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
-      ctx.lineTo(x + rr, y + h);
-      ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
-      ctx.lineTo(x, y + rr);
-      ctx.quadraticCurveTo(x, y, x + rr, y);
-      ctx.closePath();
-    }
-
-    async function buildCardTexture(blurPx = 0) {
-      if (!originalCardImage) originalCardImage = await loadImage("./card.png");
-      const img = originalCardImage;
+    async function buildCardTexture() {
+      const img = await loadImage("./card.png");
       const cw = 1400;
       const ch = Math.round(cw * img.height / img.width);
       const canvas = document.createElement("canvas");
@@ -417,7 +452,6 @@
       ctx.save();
       roundedRect(ctx, innerX, innerY, innerW, innerH, Math.max(8, radius - border*0.6));
       ctx.clip();
-      ctx.filter = blurPx > 0 ? `blur(${blurPx}px)` : "none";
       ctx.drawImage(img, innerX, innerY, innerW, innerH);
       ctx.restore();
 
@@ -433,6 +467,7 @@
       canvas.width = cw;
       canvas.height = ch;
       const ctx = canvas.getContext("2d");
+
       ctx.clearRect(0,0,cw,ch);
       const grad = ctx.createLinearGradient(0, 0, cw, ch);
       grad.addColorStop(0, "rgba(255,255,255,0.16)");
@@ -442,6 +477,7 @@
       roundedRect(ctx, 0, 0, cw, ch, 54);
       ctx.fillStyle = grad;
       ctx.fill();
+
       const texture = new THREE.CanvasTexture(canvas);
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.needsUpdate = true;
@@ -458,10 +494,26 @@
       roundedRect(ctx, 0, 0, cw, ch, 54);
       ctx.fillStyle = "#ffffff";
       ctx.fill();
+
       const texture = new THREE.CanvasTexture(canvas);
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.needsUpdate = true;
       return texture;
+    }
+
+    function roundedRect(ctx, x, y, w, h, r) {
+      const rr = Math.min(r, w/2, h/2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.lineTo(x + w - rr, y);
+      ctx.quadraticCurveTo(x + w, y, x + w, y + rr);
+      ctx.lineTo(x + w, y + h - rr);
+      ctx.quadraticCurveTo(x + w, y + h, x + w - rr, y + h);
+      ctx.lineTo(x + rr, y + h);
+      ctx.quadraticCurveTo(x, y + h, x, y + h - rr);
+      ctx.lineTo(x, y + rr);
+      ctx.quadraticCurveTo(x, y, x + rr, y);
+      ctx.closePath();
     }
 
     function updateFade(now){
@@ -485,10 +537,6 @@
           console.warn(e);
         }
       }
-      if (currentCardTexture) {
-        currentCardTexture.dispose();
-        currentCardTexture = null;
-      }
       container.innerHTML = "";
       mindarThree = null;
       renderer = null;
@@ -500,8 +548,9 @@
       setFound(false);
     }
 
-    async function startAR(showLoader = true) {
-      if (showLoader) loader.classList.remove("hidden");
+    async function startAR() {
+      loader.classList.remove("hidden");
+      container.classList.add("switching");
       await stopCurrent();
 
       try {
@@ -530,13 +579,13 @@
 
         const anchor = mindarThree.addAnchor(0);
 
-        currentCardTexture = await buildCardTexture(blurBase);
+        const cardTexture = await buildCardTexture();
         const surfaceShadeTexture = buildSurfaceShadeTexture();
         const roundedMaskTexture = buildRoundedMaskTexture();
 
         const geometry = new THREE.PlaneGeometry(CARD_W, CARD_H);
         cardMaterial = new THREE.MeshBasicMaterial({
-          map: currentCardTexture,
+          map: cardTexture,
           transparent: true,
           opacity: 1,
           side: THREE.DoubleSide,
@@ -554,7 +603,10 @@
           side: THREE.DoubleSide,
           depthWrite: false
         });
-        const surfacePlane = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), shadeMaterial);
+        const surfacePlane = new THREE.Mesh(
+          new THREE.PlaneGeometry(CARD_W, CARD_H),
+          shadeMaterial
+        );
         surfacePlane.position.set(0, 0, 0.012);
         anchor.group.add(surfacePlane);
 
@@ -566,7 +618,10 @@
           side: THREE.DoubleSide,
           depthWrite: false
         });
-        const tintPlane = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), tintMaterial);
+        const tintPlane = new THREE.Mesh(
+          new THREE.PlaneGeometry(CARD_W, CARD_H),
+          tintMaterial
+        );
         tintPlane.position.set(0, 0, 0.013);
         anchor.group.add(tintPlane);
 
@@ -577,7 +632,8 @@
 
         await mindarThree.start();
         if (currentFacingFront) await applyWideFrontCameraIfPossible();
-        if (showLoader) loader.classList.add("hidden");
+        loader.classList.add("hidden");
+        requestAnimationFrame(() => container.classList.remove("switching"));
 
         renderer.setAnimationLoop(() => {
           updateFade(performance.now());
@@ -585,7 +641,8 @@
         });
       } catch (err) {
         console.error(err);
-        if (showLoader) loader.innerHTML = "啟動失敗";
+        container.classList.remove("switching");
+        loader.innerHTML = "啟動失敗";
       }
     }
 
@@ -605,14 +662,22 @@
     });
 
     switchCamera.addEventListener("click", async () => {
-      switchFade.classList.add("show");
+      container.classList.add("switching");
       try {
-        currentFacingFront = !currentFacingFront;
-        await startAR(false);
+        if (mindarThree && typeof mindarThree.switchCamera === "function") {
+          await mindarThree.switchCamera();
+          currentFacingFront = !currentFacingFront;
+          container.classList.toggle("mirror", currentFacingFront);
+          if (currentFacingFront) await applyWideFrontCameraIfPossible();
+          requestAnimationFrame(() => container.classList.remove("switching"));
+        } else {
+          currentFacingFront = !currentFacingFront;
+          await startAR();
+        }
       } catch (e) {
         console.warn(e);
-      } finally {
-        setTimeout(() => switchFade.classList.remove("show"), 220);
+        currentFacingFront = !currentFacingFront;
+        await startAR();
       }
     });
 
@@ -625,19 +690,6 @@
     shadowSlider.addEventListener("input", () => {
       brightnessBase = parseFloat(shadowSlider.value);
       persistSettings();
-      updateMaterialControls();
-    });
-    blurSlider.addEventListener("input", async () => {
-      blurBase = parseFloat(blurSlider.value);
-      persistSettings();
-      if (cardMaterial) {
-        const newTexture = await buildCardTexture(blurBase);
-        const old = currentCardTexture;
-        currentCardTexture = newTexture;
-        cardMaterial.map = newTexture;
-        cardMaterial.needsUpdate = true;
-        if (old) old.dispose();
-      }
       updateMaterialControls();
     });
     tintSlider.addEventListener("input", () => {
