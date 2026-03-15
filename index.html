@@ -42,6 +42,9 @@
     #ar-container.mirror{
       transform:scaleX(-1);
     }
+    #ar-container.switching{
+      opacity:0;
+    }
 
     .overlay-ui{
       position:fixed; inset:0; pointer-events:none; z-index:20;
@@ -481,6 +484,23 @@
       return texture;
     }
 
+    function buildRoundedMaskTexture() {
+      const cw = 1024, ch = 728;
+      const canvas = document.createElement("canvas");
+      canvas.width = cw;
+      canvas.height = ch;
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0,0,cw,ch);
+      roundedRect(ctx, 0, 0, cw, ch, 54);
+      ctx.fillStyle = "#ffffff";
+      ctx.fill();
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.needsUpdate = true;
+      return texture;
+    }
+
     function roundedRect(ctx, x, y, w, h, r) {
       const rr = Math.min(r, w/2, h/2);
       ctx.beginPath();
@@ -530,6 +550,7 @@
 
     async function startAR() {
       loader.classList.remove("hidden");
+      container.classList.add("switching");
       await stopCurrent();
 
       try {
@@ -560,6 +581,7 @@
 
         const cardTexture = await buildCardTexture();
         const surfaceShadeTexture = buildSurfaceShadeTexture();
+        const roundedMaskTexture = buildRoundedMaskTexture();
 
         const geometry = new THREE.PlaneGeometry(CARD_W, CARD_H);
         cardMaterial = new THREE.MeshBasicMaterial({
@@ -589,6 +611,7 @@
         anchor.group.add(surfacePlane);
 
         tintMaterial = new THREE.MeshBasicMaterial({
+          map: roundedMaskTexture,
           color: tintColorHex,
           transparent: true,
           opacity: tintOpacityBase,
@@ -610,6 +633,7 @@
         await mindarThree.start();
         if (currentFacingFront) await applyWideFrontCameraIfPossible();
         loader.classList.add("hidden");
+        requestAnimationFrame(() => container.classList.remove("switching"));
 
         renderer.setAnimationLoop(() => {
           updateFade(performance.now());
@@ -617,6 +641,7 @@
         });
       } catch (err) {
         console.error(err);
+        container.classList.remove("switching");
         loader.innerHTML = "啟動失敗";
       }
     }
@@ -637,12 +662,14 @@
     });
 
     switchCamera.addEventListener("click", async () => {
+      container.classList.add("switching");
       try {
         if (mindarThree && typeof mindarThree.switchCamera === "function") {
           await mindarThree.switchCamera();
           currentFacingFront = !currentFacingFront;
           container.classList.toggle("mirror", currentFacingFront);
           if (currentFacingFront) await applyWideFrontCameraIfPossible();
+          requestAnimationFrame(() => container.classList.remove("switching"));
         } else {
           currentFacingFront = !currentFacingFront;
           await startAR();
