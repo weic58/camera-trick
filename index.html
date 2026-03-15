@@ -4,6 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
   <title>Camera</title>
+  <!-- version: v10 clean black overlay -->
 
   <script type="importmap">
   {
@@ -285,7 +286,7 @@
       <div class="settingsTitle">牌面調整</div>
       <div class="settingsRow">
         <label><span>牌面明暗</span><span id="shadowValue">1.00</span></label>
-        <input id="shadowSlider" type="range" min="0.15" max="1.60" step="0.01" value="1.00">
+        <input id="shadowSlider" type="range" min="0.00" max="5.00" step="0.01" value="2.50">
       </div>
       <div class="settingsRow">
         <label><span>顏色濾鏡</span><span id="tintValue">0.00</span></label>
@@ -360,12 +361,13 @@
     let camera = null;
     let cardMaterial = null;
     let shadeMaterial = null;
+    let darkMaterial = null;
     let tintMaterial = null;
     let currentFacingFront = false;
 
     const CARD_W = 1.11;
     const CARD_H = 0.79;
-    let brightnessBase = parseFloat(localStorage.getItem("camera_brightness") ?? "1.00");
+    let darkOpacityBase = parseFloat(localStorage.getItem("camera_dark_opacity") ?? "0.22");
     let tintOpacityBase = parseFloat(localStorage.getItem("camera_tint_opacity") ?? "0.00");
     let tintColorHex = localStorage.getItem("camera_tint_color") ?? "#ffffff";
 
@@ -377,43 +379,22 @@
     }
 
     function persistSettings(){
-      localStorage.setItem("camera_brightness", String(brightnessBase));
+      localStorage.setItem("camera_dark_opacity", String(darkOpacityBase));
       localStorage.setItem("camera_tint_opacity", String(tintOpacityBase));
       localStorage.setItem("camera_tint_color", tintColorHex);
     }
 
     function updateMaterialControls(){
-      shadowSlider.value = String(brightnessBase);
+      shadowSlider.value = String(darkOpacityBase);
       tintSlider.value = String(tintOpacityBase);
       tintColorInput.value = tintColorHex;
-      shadowValue.textContent = brightnessBase.toFixed(2);
+      shadowValue.textContent = darkOpacityBase.toFixed(2);
       tintValue.textContent = tintOpacityBase.toFixed(2);
 
-      if (shadeMaterial) {
-        if (brightnessBase <= 1) {
-          shadeMaterial.color.set("#000000");
-          shadeMaterial.opacity = fadeAlpha * (1 - brightnessBase) * 1.55;
-        } else {
-          shadeMaterial.color.set("#ffffff");
-          shadeMaterial.opacity = fadeAlpha * (brightnessBase - 1) * 0.95;
-        }
-      }
+      if (darkMaterial) darkMaterial.opacity = fadeAlpha * darkOpacityBase;
       if (tintMaterial) {
         tintMaterial.opacity = fadeAlpha * tintOpacityBase;
         tintMaterial.color.set(tintColorHex);
-      }
-    }
-
-    async function applyWideFrontCameraIfPossible() {
-      try {
-        const track = mindarThree?.video?.srcObject?.getVideoTracks?.()[0];
-        if (!track || !track.getCapabilities) return;
-        const caps = track.getCapabilities();
-        if (caps.zoom && typeof caps.zoom.min === "number") {
-          await track.applyConstraints({ advanced: [{ zoom: caps.zoom.min }] });
-        }
-      } catch (e) {
-        console.warn("front camera zoom min not applied", e);
       }
     }
 
@@ -544,6 +525,7 @@
       camera = null;
       cardMaterial = null;
       shadeMaterial = null;
+      darkMaterial = null;
       tintMaterial = null;
       setFound(false);
     }
@@ -688,7 +670,7 @@
     settingsPanel.addEventListener("click", (e) => e.stopPropagation());
 
     shadowSlider.addEventListener("input", () => {
-      brightnessBase = parseFloat(shadowSlider.value);
+      darkOpacityBase = parseFloat(shadowSlider.value);
       persistSettings();
       updateMaterialControls();
     });
