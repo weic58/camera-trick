@@ -408,20 +408,20 @@
     }
 
     function updateMaterialControls(){
-      shadowSlider.value = String(darkOpacityBase);
-      featherSlider.value = String(featherBase);
-      tintSlider.value = String(tintOpacityBase);
-      tintColorInput.value = tintColorHex;
-      contrastSlider.value = String(contrastBase);
-      saturationSlider.value = String(saturationBase);
-      cardBrightnessSlider.value = String(brightnessCardBase);
+      if (shadowSlider) shadowSlider.value = String(darkOpacityBase);
+      if (typeof featherSlider !== "undefined" && featherSlider) featherSlider.value = String(featherBase);
+      if (tintSlider) tintSlider.value = String(tintOpacityBase);
+      if (tintColorInput) tintColorInput.value = tintColorHex;
+      if (typeof contrastSlider !== "undefined" && contrastSlider) contrastSlider.value = String(contrastBase);
+      if (typeof saturationSlider !== "undefined" && saturationSlider) saturationSlider.value = String(saturationBase);
+      if (typeof cardBrightnessSlider !== "undefined" && cardBrightnessSlider) cardBrightnessSlider.value = String(brightnessCardBase);
 
-      shadowValue.textContent = darkOpacityBase.toFixed(2);
-      featherValue.textContent = featherBase.toFixed(3);
-      tintValue.textContent = tintOpacityBase.toFixed(2);
-      contrastValue.textContent = contrastBase.toFixed(2);
-      saturationValue.textContent = saturationBase.toFixed(2);
-      cardBrightnessValue.textContent = brightnessCardBase.toFixed(2);
+      if (shadowValue) shadowValue.textContent = darkOpacityBase.toFixed(2);
+      if (typeof featherValue !== "undefined" && featherValue) featherValue.textContent = featherBase.toFixed(3);
+      if (tintValue) tintValue.textContent = tintOpacityBase.toFixed(2);
+      if (typeof contrastValue !== "undefined" && contrastValue) contrastValue.textContent = contrastBase.toFixed(2);
+      if (typeof saturationValue !== "undefined" && saturationValue) saturationValue.textContent = saturationBase.toFixed(2);
+      if (typeof cardBrightnessValue !== "undefined" && cardBrightnessValue) cardBrightnessValue.textContent = brightnessCardBase.toFixed(2);
 
       if (shadeMaterial) shadeMaterial.opacity = fadeAlpha * 0.08;
       if (darkMaterial) darkMaterial.opacity = fadeAlpha * darkOpacityBase;
@@ -876,7 +876,7 @@
       persistSettings();
       updateMaterialControls();
     });
-    featherSlider.addEventListener("input", () => {
+    if (typeof featherSlider !== "undefined" && featherSlider) featherSlider.addEventListener("input", () => {
       featherBase = parseFloat(featherSlider.value);
       persistSettings();
       const newMask = buildFeatheredMaskTexture(featherBase);
@@ -891,7 +891,7 @@
         darkMaterial.needsUpdate = true;
       }
       if (tintMaterial) {
-        tintMaterial.map = newMask;
+        tintMaterial.alphaMap = newMask;
         tintMaterial.needsUpdate = true;
       }
       updateMaterialControls();
