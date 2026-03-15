@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no" />
   <title>Camera</title>
-  <!-- version: warm tint border aligned + black-area warm tint -->
+  <!-- version: split warm tint layers (border + white area + dark area) -->
 
   <script type="importmap">
   {
@@ -325,6 +325,7 @@
     let cardMaterial = null;
     let shadeMaterial = null;
     let darkMaterial = null;
+    let borderTintMaterial = null;
     let tintMaterial = null;
     let darkTintMaterial = null;
     let currentFacingFront = false;
@@ -383,6 +384,10 @@
 
       if (shadeMaterial) shadeMaterial.opacity = fadeAlpha * 0.08;
       if (darkMaterial) darkMaterial.opacity = fadeAlpha * darkOpacityBase;
+      if (borderTintMaterial) {
+        borderTintMaterial.opacity = fadeAlpha * tintOpacityBase;
+        borderTintMaterial.color.set(tintColorHex);
+      }
       if (tintMaterial) {
         tintMaterial.opacity = fadeAlpha * tintOpacityBase;
         tintMaterial.color.set(tintColorHex);
@@ -497,7 +502,6 @@
       const innerH = ch - border * 2;
       const innerRadius = Math.max(8, radius - border * 0.6);
 
-      // White outer frame gets full warm tint. Inner artwork only tints light/white zones.
       const innerCanvas = document.createElement("canvas");
       innerCanvas.width = innerW;
       innerCanvas.height = innerH;
@@ -539,12 +543,6 @@
       const fctx = finalCanvas.getContext("2d");
       fctx.clearRect(0, 0, cw, ch);
 
-      // Paint full warmable card area as white. The actual outer silhouette is controlled only by the shared alphaMap.
-      fctx.fillStyle = "rgba(255,255,255,1)";
-      fctx.fillRect(0, 0, cw, ch);
-
-      // Replace inner artwork region with the white-only mask so dark symbols are not warmed too much.
-      fctx.clearRect(innerX, innerY, innerW, innerH);
       fctx.save();
       roundedRect(fctx, innerX, innerY, innerW, innerH, innerRadius);
       fctx.clip();
@@ -750,6 +748,7 @@
       cardMaterial = null;
       shadeMaterial = null;
       darkMaterial = null;
+      borderTintMaterial = null;
       tintMaterial = null;
       darkTintMaterial = null;
       cardGroup = null;
@@ -835,6 +834,18 @@
         const darkPlane = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), darkMaterial);
         darkPlane.position.set(0, 0, 0.0124);
         cardGroup.add(darkPlane);
+
+        borderTintMaterial = new THREE.MeshBasicMaterial({
+          alphaMap: roundedMaskTexture,
+          color: tintColorHex,
+          transparent: true,
+          opacity: tintOpacityBase,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        const borderTintPlane = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), borderTintMaterial);
+        borderTintPlane.position.set(0, 0, 0.01285);
+        cardGroup.add(borderTintPlane);
 
         tintMaterial = new THREE.MeshBasicMaterial({
           alphaMap: roundedMaskTexture,
