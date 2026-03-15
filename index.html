@@ -344,9 +344,11 @@
     const openSettings = document.getElementById("openSettings");
     const settingsPanel = document.getElementById("settingsPanel");
     const shadowSlider = document.getElementById("shadowSlider");
+    const blurSlider = document.getElementById("blurSlider");
     const tintSlider = document.getElementById("tintSlider");
     const tintColorInput = document.getElementById("tintColor");
     const shadowValue = document.getElementById("shadowValue");
+    const blurValue = document.getElementById("blurValue");
     const tintValue = document.getElementById("tintValue");
 
     let fadeAlpha = 1;
@@ -525,7 +527,11 @@
         fadeAnimating = false;
       }
       if (cardMaterial) cardMaterial.opacity = fadeAlpha;
-      updateMaterialControls();
+      if (typeof blurSlider !== "undefined" && blurSlider) blurSlider.value = String(blurBase);
+        shadowSlider.value = String(shadowOpacityBase);
+        tintSlider.value = String(tintOpacityBase);
+        tintColorInput.value = tintColorHex;
+        updateMaterialControls();
     }
 
     async function stopCurrent() {
@@ -579,7 +585,7 @@
 
         const anchor = mindarThree.addAnchor(0);
 
-        const cardTexture = await buildCardTexture();
+        const cardTexture = await buildBlurredCardTexture(blurBase);
         const surfaceShadeTexture = buildSurfaceShadeTexture();
         const roundedMaskTexture = buildRoundedMaskTexture();
 
