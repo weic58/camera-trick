@@ -345,11 +345,9 @@
     const settingsPanel = document.getElementById("settingsPanel");
     const shadowSlider = document.getElementById("shadowSlider");
     const tintSlider = document.getElementById("tintSlider");
-    const featherSlider = document.getElementById("featherSlider");
     const tintColorInput = document.getElementById("tintColor");
     const shadowValue = document.getElementById("shadowValue");
     const tintValue = document.getElementById("tintValue");
-    const featherValue = document.getElementById("featherValue");
 
     let fadeAlpha = 1;
     let fadeAnimating = false;
@@ -583,7 +581,6 @@
 
         const cardTexture = await buildCardTexture();
         const surfaceShadeTexture = buildSurfaceShadeTexture();
-        const featherMaskTexture = buildFeatheredMaskTexture(featherBase);
         const roundedMaskTexture = buildRoundedMaskTexture();
 
         const geometry = new THREE.PlaneGeometry(CARD_W, CARD_H);
@@ -614,7 +611,7 @@
         anchor.group.add(surfacePlane);
 
         tintMaterial = new THREE.MeshBasicMaterial({
-          map: featherMaskTexture,
+          map: roundedMaskTexture,
           color: tintColorHex,
           transparent: true,
           opacity: tintOpacityBase,
