@@ -32,56 +32,31 @@
     }
     body{position:relative}
     #ar-container{
-      position:fixed;
-      inset:0;
-      z-index:1;
-      overflow:hidden;
-      background:#000;
+      position:fixed; inset:0; z-index:1; overflow:hidden; background:#000;
       transform-origin:center center;
     }
-    #ar-container.mirror{
-      transform:scaleX(-1);
-    }
-    #ar-container.switching{
-      opacity:0;
-    }
+    #ar-container.mirror{ transform:scaleX(-1); }
+    #ar-container.switching{ opacity:0; }
 
-    .overlay-ui{
-      position:fixed; inset:0; pointer-events:none; z-index:20;
-    }
-
+    .overlay-ui{ position:fixed; inset:0; pointer-events:none; z-index:20; }
     .topBlack{
-      position:absolute; left:0; right:0; top:0;
-      height:max(54px, 7.8vh);
-      background:#000;
-      z-index:0;
+      position:absolute; left:0; right:0; top:0; height:max(54px, 7.8vh); background:#000; z-index:0;
     }
     .bottomBlack{
-      position:absolute; left:0; right:0; bottom:0;
-      height:max(170px, 24vh);
-      background:#000;
-      z-index:0;
+      position:absolute; left:0; right:0; bottom:0; height:max(170px, 24vh); background:#000; z-index:0;
     }
-
     .topFade{
       position:absolute;left:0;right:0;top:0;height:12.5vh;min-height:58px;
-      background:linear-gradient(to bottom,rgba(0,0,0,.88),rgba(0,0,0,.40),rgba(0,0,0,0));
-      z-index:1;
+      background:linear-gradient(to bottom,rgba(0,0,0,.88),rgba(0,0,0,.40),rgba(0,0,0,0)); z-index:1;
     }
     .bottomFade{
       position:absolute;left:0;right:0;bottom:0;height:30vh;min-height:180px;
-      background:linear-gradient(to top,rgba(0,0,0,.98),rgba(0,0,0,.82),rgba(0,0,0,0));
-      z-index:1;
+      background:linear-gradient(to top,rgba(0,0,0,.98),rgba(0,0,0,.82),rgba(0,0,0,0)); z-index:1;
     }
 
     .cameraGuide{
-      position:absolute;
-      left:0; right:0;
-      top:max(54px, 7.8vh);
-      bottom:max(170px, 24vh);
-      z-index:2;
-      overflow:hidden;
-      pointer-events:none;
+      position:absolute; left:0; right:0; top:max(54px, 7.8vh); bottom:max(170px, 24vh);
+      z-index:2; overflow:hidden; pointer-events:none;
     }
     .gridline{position:absolute;background:rgba(255,255,255,.30);}
     .v1,.v2{top:0;bottom:0;width:1px}
@@ -99,127 +74,84 @@
     .focusCross::after{top:0;bottom:0;left:20px;width:2px}
 
     .statusDot{
-      position:absolute;left:14px;top:var(--top-safe);
-      width:11px;height:11px;border-radius:50%;
-      background:#ff4c4c;
-      box-shadow:0 0 8px rgba(255,76,76,.5);
-      border:1px solid rgba(255,255,255,.28);
-      z-index:5;
+      position:absolute;left:14px;top:var(--top-safe); width:11px;height:11px;border-radius:50%;
+      background:#ff4c4c; box-shadow:0 0 8px rgba(255,76,76,.5); border:1px solid rgba(255,255,255,.28); z-index:5;
     }
 
     .toolbar{
       position:absolute;top:var(--top-safe);right:14px;z-index:5;
-      display:flex;gap:10px;align-items:center;
-      pointer-events:none;
+      display:flex;gap:10px;align-items:center;pointer-events:none;
     }
     .toolbar .pill{
-      height:46px;padding:0 10px;border-radius:23px;
-      display:flex;align-items:center;gap:4px;
-      background:var(--ui-bg);border:1px solid var(--ui-border);
-      backdrop-filter:blur(10px);
+      height:46px;padding:0 10px;border-radius:23px; display:flex;align-items:center;gap:4px;
+      background:var(--ui-bg);border:1px solid var(--ui-border); backdrop-filter:blur(10px);
     }
-    .iconOnly{
-      width:34px;height:34px;border-radius:17px;
-      display:grid;place-items:center;background:transparent;color:#fff;
-    }
-    .iconOnly svg{width:21px;height:21px}
+    .iconOnly{ width:34px;height:34px;border-radius:17px; display:grid;place-items:center;background:transparent;color:#fff; }
+    .iconOnly svg{ width:21px;height:21px }
 
     .settingsPanel{
-      position:absolute;
-      left:14px;
-      bottom:calc(var(--bottom-safe) + 82px);
-      z-index:30;
-      width:min(270px, 64vw);
-      padding:12px;
-      border-radius:16px;
-      background:rgba(0,0,0,.48);
-      border:1px solid rgba(255,255,255,.12);
-      backdrop-filter:blur(10px);
-      pointer-events:auto;
-      display:none;
+      position:absolute; left:14px; bottom:calc(var(--bottom-safe) + 82px); z-index:30;
+      width:min(270px, 64vw); padding:12px; border-radius:16px;
+      background:rgba(0,0,0,.48); border:1px solid rgba(255,255,255,.12);
+      backdrop-filter:blur(10px); pointer-events:auto; display:none;
     }
     .settingsPanel.open{display:block}
-    .settingsTitle{
-      font-size:13px;
-      font-weight:700;
-      margin-bottom:10px;
-      color:#fff;
-    }
-    .settingsRow{margin-bottom:10px}
+    .settingsTitle{ font-size:13px; font-weight:700; margin-bottom:10px; color:#fff; }
+    .settingsRow{ margin-bottom:10px }
     .settingsRow label{
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
-      margin-bottom:4px;
-      font-size:12px;
-      color:rgba(255,255,255,.92);
+      display:flex; justify-content:space-between; align-items:center; gap:10px;
+      margin-bottom:4px; font-size:12px; color:rgba(255,255,255,.92);
     }
-    .settingsRow input[type="range"]{width:100%}
-    .colorRow{display:flex;gap:8px;margin-top:6px}
+    .settingsRow input[type="range"]{ width:100% }
+    .colorRow{ display:flex; gap:8px; margin-top:6px; flex-wrap:wrap; }
     .presetColor{
-      width:24px;height:24px;border-radius:50%;
-      border:1px solid rgba(255,255,255,.22);
-      cursor:pointer;pointer-events:auto;padding:0;
+      width:24px;height:24px;border-radius:50%; border:1px solid rgba(255,255,255,.22);
+      cursor:pointer; pointer-events:auto; padding:0;
     }
 
     .bottomUI{
-      position:absolute;left:0;right:0;bottom:0;
-      padding:0 18px calc(var(--bottom-safe) + 8px);
-      display:flex;flex-direction:column;gap:10px;
-      z-index:5;
+      position:absolute;left:0;right:0;bottom:0; padding:0 18px calc(var(--bottom-safe) + 8px);
+      display:flex;flex-direction:column;gap:10px; z-index:5;
     }
-    .modeRow{
-      display:flex;justify-content:center;align-items:center;margin-bottom:2px;
-    }
+    .modeRow{ display:flex;justify-content:center;align-items:center;margin-bottom:2px; }
     .modePill{
       display:flex;align-items:center;gap:2px;padding:4px;border-radius:24px;
-      background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.10);
-      backdrop-filter:blur(10px);
+      background:rgba(255,255,255,.08); border:1px solid rgba(255,255,255,.10); backdrop-filter:blur(10px);
     }
     .mode{
       min-width:84px;height:38px;border-radius:19px;display:grid;place-items:center;
       font-size:15px;font-weight:600;color:var(--ui-soft);
     }
     .mode.active{
-      background:rgba(255,255,255,.11);color:var(--yellow);
-      box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+      background:rgba(255,255,255,.11);color:var(--yellow); box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
     }
 
     .shutterRow{
-      display:grid;grid-template-columns:64px 1fr 64px;align-items:center;
-      padding:0 0 2px; min-height:98px;
+      display:grid;grid-template-columns:64px 1fr 64px;align-items:center; padding:0 0 2px; min-height:98px;
     }
-    .thumbButton{
-      pointer-events:auto;
-      background:none;border:none;padding:0;justify-self:start;cursor:pointer;
-    }
+    .thumbButton{ pointer-events:auto; background:none;border:none;padding:0;justify-self:start;cursor:pointer; }
     .thumb{
-      width:54px;height:54px;border-radius:50%;overflow:hidden;
-      border:1px solid rgba(255,255,255,.18);background:#555;
-      box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
+      width:54px;height:54px;border-radius:50%;overflow:hidden; border:1px solid rgba(255,255,255,.18);
+      background:#555; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);
     }
     .thumb img{display:block;width:100%;height:100%;object-fit:cover}
     #shutter{
-      pointer-events:auto;
-      justify-self:center;width:84px;height:84px;border-radius:50%;border:none;outline:none;cursor:pointer;
-      background:#f6f6f6;
+      pointer-events:auto; justify-self:center;width:84px;height:84px;border-radius:50%;
+      border:none;outline:none;cursor:pointer; background:#f6f6f6;
       box-shadow:0 0 0 6px rgba(255,255,255,.26), inset 0 0 0 2px rgba(0,0,0,.05);
     }
     #switchCamera{
-      pointer-events:auto;
-      justify-self:end;width:56px;height:56px;border-radius:50%;border:none;outline:none;cursor:pointer;
-      display:grid;place-items:center;background:rgba(255,255,255,.12);
-      backdrop-filter:blur(10px);box-shadow:inset 0 0 0 1px rgba(255,255,255,.08);
-      color:#fff;
+      pointer-events:auto; justify-self:end;width:56px;height:56px;border-radius:50%;
+      border:none;outline:none;cursor:pointer; display:grid;place-items:center;
+      background:rgba(255,255,255,.12); backdrop-filter:blur(10px);
+      box-shadow:inset 0 0 0 1px rgba(255,255,255,.08); color:#fff;
     }
     #switchCamera svg{width:32px;height:32px}
     #switchCamera:active,#shutter:active{transform:scale(.96)}
 
     .loader{
       position:fixed; inset:0; display:flex; align-items:center; justify-content:center;
-      background:rgba(0,0,0,.85); z-index:40; color:white; font-size:16px;
-      text-align:center; padding:24px;
+      background:rgba(0,0,0,.85); z-index:40; color:white; font-size:16px; text-align:center; padding:24px;
     }
     .loader.hidden{display:none}
 
@@ -284,19 +216,23 @@
     <div class="settingsPanel" id="settingsPanel">
       <div class="settingsTitle">牌面調整</div>
       <div class="settingsRow">
-        <label><span>牌面暗度</span><span id="shadowValue">0.22</span></label>
-        <input id="shadowSlider" type="range" min="0.00" max="1.00" step="0.01" value="0.22">
+        <label><span>牌面暗度</span><span id="shadowValue">0.12</span></label>
+        <input id="shadowSlider" type="range" min="0.00" max="1.00" step="0.01" value="0.12">
       </div>
       <div class="settingsRow">
-        <label><span>邊緣柔邊</span><span id="featherValue">0.00</span></label>
-        <input id="featherSlider" type="range" min="0.00" max="0.16" step="0.005" value="0.00">
+        <label><span>邊緣柔邊</span><span id="featherValue">0.010</span></label>
+        <input id="featherSlider" type="range" min="0.00" max="0.16" step="0.005" value="0.01">
       </div>
       <div class="settingsRow">
-        <label><span>暖色紙感</span><span id="tintValue">0.00</span></label>
-        <input id="tintSlider" type="range" min="0" max="0.60" step="0.01" value="0.00">
+        <label><span>暖色紙感</span><span id="tintValue">0.08</span></label>
+        <input id="tintSlider" type="range" min="0.00" max="0.85" step="0.01" value="0.08">
       </div>
       <div class="settingsRow">
-        <label><span>濾鏡顏色</span><input id="tintColor" type="color" value="#ffffff" style="width:38px;height:24px;background:transparent;border:none;padding:0"></label>
+        <label><span>黑色區域暖色</span><span id="darkTintValue">0.00</span></label>
+        <input id="darkTintSlider" type="range" min="0.00" max="0.35" step="0.01" value="0.00">
+      </div>
+      <div class="settingsRow">
+        <label><span>濾鏡顏色</span><input id="tintColor" type="color" value="#f0df9f" style="width:38px;height:24px;background:transparent;border:none;padding:0"></label>
         <div class="colorRow">
           <button class="presetColor" data-color="#ffffff" style="background:#ffffff"></button>
           <button class="presetColor" data-color="#f6e7c8" style="background:#f6e7c8"></button>
@@ -305,6 +241,18 @@
           <button class="presetColor" data-color="#ffd6d6" style="background:#ffd6d6"></button>
           <button class="presetColor" data-color="#d7ffd7" style="background:#d7ffd7"></button>
         </div>
+      </div>
+      <div class="settingsRow">
+        <label><span>對比</span><span id="contrastValue">1.12</span></label>
+        <input id="contrastSlider" type="range" min="0.80" max="1.35" step="0.01" value="1.12">
+      </div>
+      <div class="settingsRow">
+        <label><span>飽和</span><span id="saturationValue">1.10</span></label>
+        <input id="saturationSlider" type="range" min="0.80" max="1.35" step="0.01" value="1.10">
+      </div>
+      <div class="settingsRow">
+        <label><span>卡面亮度</span><span id="cardBrightnessValue">0.96</span></label>
+        <input id="cardBrightnessSlider" type="range" min="0.80" max="1.15" step="0.01" value="0.96">
       </div>
     </div>
 
@@ -351,6 +299,7 @@
     const shadowSlider = document.getElementById("shadowSlider");
     const featherSlider = document.getElementById("featherSlider");
     const tintSlider = document.getElementById("tintSlider");
+    const darkTintSlider = document.getElementById("darkTintSlider");
     const tintColorInput = document.getElementById("tintColor");
     const contrastSlider = document.getElementById("contrastSlider");
     const saturationSlider = document.getElementById("saturationSlider");
@@ -358,6 +307,7 @@
     const shadowValue = document.getElementById("shadowValue");
     const featherValue = document.getElementById("featherValue");
     const tintValue = document.getElementById("tintValue");
+    const darkTintValue = document.getElementById("darkTintValue");
     const contrastValue = document.getElementById("contrastValue");
     const saturationValue = document.getElementById("saturationValue");
     const cardBrightnessValue = document.getElementById("cardBrightnessValue");
@@ -375,10 +325,12 @@
     let shadeMaterial = null;
     let darkMaterial = null;
     let tintMaterial = null;
+    let darkTintMaterial = null;
     let currentFacingFront = false;
     let currentMaskTexture = null;
     let currentCardTexture = null;
     let currentLumaMaskTexture = null;
+    let currentDarkLumaMaskTexture = null;
     let cardGroup = null;
 
     const CARD_W = 1.11;
@@ -386,6 +338,7 @@
     let darkOpacityBase = parseFloat(localStorage.getItem("camera_dark_opacity") ?? "0.12");
     let featherBase = parseFloat(localStorage.getItem("camera_feather") ?? "0.01");
     let tintOpacityBase = parseFloat(localStorage.getItem("camera_tint_opacity") ?? "0.08");
+    let darkTintOpacityBase = parseFloat(localStorage.getItem("camera_dark_tint_opacity") ?? "0.00");
     let tintColorHex = localStorage.getItem("camera_tint_color") ?? "#f0df9f";
     let contrastBase = parseFloat(localStorage.getItem("camera_contrast") ?? "1.12");
     let saturationBase = parseFloat(localStorage.getItem("camera_saturation") ?? "1.10");
@@ -402,6 +355,7 @@
       localStorage.setItem("camera_dark_opacity", String(darkOpacityBase));
       localStorage.setItem("camera_feather", String(featherBase));
       localStorage.setItem("camera_tint_opacity", String(tintOpacityBase));
+      localStorage.setItem("camera_dark_tint_opacity", String(darkTintOpacityBase));
       localStorage.setItem("camera_tint_color", tintColorHex);
       localStorage.setItem("camera_contrast", String(contrastBase));
       localStorage.setItem("camera_saturation", String(saturationBase));
@@ -409,26 +363,32 @@
     }
 
     function updateMaterialControls(){
-      if (shadowSlider) shadowSlider.value = String(darkOpacityBase);
-      if (typeof featherSlider !== "undefined" && featherSlider) featherSlider.value = String(featherBase);
-      if (tintSlider) tintSlider.value = String(tintOpacityBase);
-      if (tintColorInput) tintColorInput.value = tintColorHex;
-      if (typeof contrastSlider !== "undefined" && contrastSlider) contrastSlider.value = String(contrastBase);
-      if (typeof saturationSlider !== "undefined" && saturationSlider) saturationSlider.value = String(saturationBase);
-      if (typeof cardBrightnessSlider !== "undefined" && cardBrightnessSlider) cardBrightnessSlider.value = String(brightnessCardBase);
+      shadowSlider.value = String(darkOpacityBase);
+      featherSlider.value = String(featherBase);
+      tintSlider.value = String(tintOpacityBase);
+      darkTintSlider.value = String(darkTintOpacityBase);
+      tintColorInput.value = tintColorHex;
+      contrastSlider.value = String(contrastBase);
+      saturationSlider.value = String(saturationBase);
+      cardBrightnessSlider.value = String(brightnessCardBase);
 
-      if (shadowValue) shadowValue.textContent = darkOpacityBase.toFixed(2);
-      if (typeof featherValue !== "undefined" && featherValue) featherValue.textContent = featherBase.toFixed(3);
-      if (tintValue) tintValue.textContent = tintOpacityBase.toFixed(2);
-      if (typeof contrastValue !== "undefined" && contrastValue) contrastValue.textContent = contrastBase.toFixed(2);
-      if (typeof saturationValue !== "undefined" && saturationValue) saturationValue.textContent = saturationBase.toFixed(2);
-      if (typeof cardBrightnessValue !== "undefined" && cardBrightnessValue) cardBrightnessValue.textContent = brightnessCardBase.toFixed(2);
+      shadowValue.textContent = darkOpacityBase.toFixed(2);
+      featherValue.textContent = featherBase.toFixed(3);
+      tintValue.textContent = tintOpacityBase.toFixed(2);
+      darkTintValue.textContent = darkTintOpacityBase.toFixed(2);
+      contrastValue.textContent = contrastBase.toFixed(2);
+      saturationValue.textContent = saturationBase.toFixed(2);
+      cardBrightnessValue.textContent = brightnessCardBase.toFixed(2);
 
       if (shadeMaterial) shadeMaterial.opacity = fadeAlpha * 0.08;
       if (darkMaterial) darkMaterial.opacity = fadeAlpha * darkOpacityBase;
       if (tintMaterial) {
         tintMaterial.opacity = fadeAlpha * tintOpacityBase;
         tintMaterial.color.set(tintColorHex);
+      }
+      if (darkTintMaterial) {
+        darkTintMaterial.opacity = fadeAlpha * darkTintOpacityBase;
+        darkTintMaterial.color.set(tintColorHex);
       }
     }
 
@@ -457,32 +417,27 @@
       img.src = src;
     });
 
-    function clamp255(v) {
-      return Math.max(0, Math.min(255, v));
-    }
+    function clamp255(v) { return Math.max(0, Math.min(255, v)); }
 
     function processImageData(imageData, contrast, saturation, brightnessMul) {
       const d = imageData.data;
-      const c = contrast;
-      const s = saturation;
-      const b = brightnessMul;
       for (let i = 0; i < d.length; i += 4) {
-        let r = d[i] * b;
-        let g = d[i + 1] * b;
-        let bl = d[i + 2] * b;
+        let r = d[i] * brightnessMul;
+        let g = d[i + 1] * brightnessMul;
+        let b = d[i + 2] * brightnessMul;
 
-        r = ((r - 128) * c) + 128;
-        g = ((g - 128) * c) + 128;
-        bl = ((bl - 128) * c) + 128;
+        r = ((r - 128) * contrast) + 128;
+        g = ((g - 128) * contrast) + 128;
+        b = ((b - 128) * contrast) + 128;
 
-        const gray = 0.299 * r + 0.587 * g + 0.114 * bl;
-        r = gray + (r - gray) * s;
-        g = gray + (g - gray) * s;
-        bl = gray + (bl - gray) * s;
+        const gray = 0.299 * r + 0.587 * g + 0.114 * b;
+        r = gray + (r - gray) * saturation;
+        g = gray + (g - gray) * saturation;
+        b = gray + (b - gray) * saturation;
 
         d[i] = clamp255(r);
         d[i + 1] = clamp255(g);
-        d[i + 2] = clamp255(bl);
+        d[i + 2] = clamp255(b);
       }
       return imageData;
     }
@@ -541,7 +496,6 @@
       const innerH = ch - border * 2;
       const innerRadius = Math.max(8, radius - border * 0.6);
 
-      // Build mask only in the same inner content area as the card artwork
       const innerCanvas = document.createElement("canvas");
       innerCanvas.width = innerW;
       innerCanvas.height = innerH;
@@ -559,19 +513,14 @@
         const sat = maxc === 0 ? 0 : (maxc - minc) / maxc;
 
         let mask = 0;
-        // white / pale regions only
         if (luma > 172 && sat < 0.30) {
           mask = Math.min(255, Math.max(0, (luma - 172) * 3.8));
         }
 
-        d[i] = 255;
-        d[i + 1] = 255;
-        d[i + 2] = 255;
-        d[i + 3] = mask;
+        d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = mask;
       }
       ictx.putImageData(imageData, 0, 0);
 
-      // slight blur so the paper tint blends naturally but stays aligned
       const blurredInner = document.createElement("canvas");
       blurredInner.width = innerW;
       blurredInner.height = innerH;
@@ -579,7 +528,69 @@
       bctx.filter = "blur(1.2px)";
       bctx.drawImage(innerCanvas, 0, 0);
 
-      // Composite into the SAME card layout (same white border and same rounded inner clip)
+      const finalCanvas = document.createElement("canvas");
+      finalCanvas.width = cw;
+      finalCanvas.height = ch;
+      const fctx = finalCanvas.getContext("2d");
+      fctx.clearRect(0, 0, cw, ch);
+
+      fctx.save();
+      roundedRect(fctx, 0, 0, cw, ch, radius);
+      fctx.clip();
+      fctx.fillStyle = "rgba(255,255,255,1)";
+      fctx.fillRect(0, 0, cw, ch);
+
+      fctx.clearRect(innerX, innerY, innerW, innerH);
+      fctx.save();
+      roundedRect(fctx, innerX, innerY, innerW, innerH, innerRadius);
+      fctx.clip();
+      fctx.drawImage(blurredInner, innerX, innerY);
+      fctx.restore();
+      fctx.restore();
+
+      const texture = new THREE.CanvasTexture(finalCanvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    async function buildDarkAreaMaskTexture() {
+      const img = await loadImage("./card.png");
+      const cw = 1400;
+      const ch = Math.round(cw * img.height / img.width);
+      const border = Math.round(ch * 0.035);
+      const innerX = border;
+      const innerY = border;
+      const innerW = cw - border * 2;
+      const innerH = ch - border * 2;
+      const innerRadius = Math.max(8, Math.round(ch * 0.07) - border * 0.6);
+
+      const innerCanvas = document.createElement("canvas");
+      innerCanvas.width = innerW;
+      innerCanvas.height = innerH;
+      const ictx = innerCanvas.getContext("2d");
+      ictx.drawImage(img, 0, 0, innerW, innerH);
+
+      const imageData = ictx.getImageData(0, 0, innerW, innerH);
+      const d = imageData.data;
+      for (let i = 0; i < d.length; i += 4) {
+        const r = d[i], g = d[i + 1], b = d[i + 2];
+        const luma = 0.299 * r + 0.587 * g + 0.114 * b;
+        let mask = 0;
+        if (luma < 145) {
+          mask = Math.min(255, Math.max(0, (145 - luma) * 2.6));
+        }
+        d[i] = 255; d[i + 1] = 255; d[i + 2] = 255; d[i + 3] = mask;
+      }
+      ictx.putImageData(imageData, 0, 0);
+
+      const blurredInner = document.createElement("canvas");
+      blurredInner.width = innerW;
+      blurredInner.height = innerH;
+      const bctx = blurredInner.getContext("2d");
+      bctx.filter = "blur(0.8px)";
+      bctx.drawImage(innerCanvas, 0, 0);
+
       const finalCanvas = document.createElement("canvas");
       finalCanvas.width = cw;
       finalCanvas.height = ch;
@@ -693,6 +704,14 @@
         tintMaterial.needsUpdate = true;
         if (oldWhiteMask) oldWhiteMask.dispose();
       }
+      if (darkTintMaterial) {
+        const newDarkMask = await buildDarkAreaMaskTexture();
+        const oldDarkMask = currentDarkLumaMaskTexture;
+        currentDarkLumaMaskTexture = newDarkMask;
+        darkTintMaterial.map = newDarkMask;
+        darkTintMaterial.needsUpdate = true;
+        if (oldDarkMask) oldDarkMask.dispose();
+      }
     }
 
     async function stopCurrent() {
@@ -716,6 +735,10 @@
         currentLumaMaskTexture.dispose();
         currentLumaMaskTexture = null;
       }
+      if (currentDarkLumaMaskTexture) {
+        currentDarkLumaMaskTexture.dispose();
+        currentDarkLumaMaskTexture = null;
+      }
       container.innerHTML = "";
       mindarThree = null;
       renderer = null;
@@ -725,6 +748,7 @@
       shadeMaterial = null;
       darkMaterial = null;
       tintMaterial = null;
+      darkTintMaterial = null;
       cardGroup = null;
       setFound(false);
     }
@@ -767,6 +791,8 @@
         currentMaskTexture = roundedMaskTexture;
         const whiteAreaMaskTexture = await buildWhiteAreaMaskTexture();
         currentLumaMaskTexture = whiteAreaMaskTexture;
+        const darkAreaMaskTexture = await buildDarkAreaMaskTexture();
+        currentDarkLumaMaskTexture = darkAreaMaskTexture;
 
         const geometry = new THREE.PlaneGeometry(CARD_W, CARD_H);
         cardMaterial = new THREE.MeshBasicMaterial({
@@ -791,10 +817,7 @@
           side: THREE.DoubleSide,
           depthWrite: false
         });
-        const sheenPlane = new THREE.Mesh(
-          new THREE.PlaneGeometry(CARD_W, CARD_H),
-          shadeMaterial
-        );
+        const sheenPlane = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), shadeMaterial);
         sheenPlane.position.set(0, 0, 0.0115);
         cardGroup.add(sheenPlane);
 
@@ -806,10 +829,7 @@
           side: THREE.DoubleSide,
           depthWrite: false
         });
-        const darkPlane = new THREE.Mesh(
-          new THREE.PlaneGeometry(CARD_W, CARD_H),
-          darkMaterial
-        );
+        const darkPlane = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), darkMaterial);
         darkPlane.position.set(0, 0, 0.0124);
         cardGroup.add(darkPlane);
 
@@ -822,12 +842,22 @@
           side: THREE.DoubleSide,
           depthWrite: false
         });
-        const tintPlane = new THREE.Mesh(
-          new THREE.PlaneGeometry(CARD_W, CARD_H),
-          tintMaterial
-        );
+        const tintPlane = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), tintMaterial);
         tintPlane.position.set(0, 0, 0.013);
         cardGroup.add(tintPlane);
+
+        darkTintMaterial = new THREE.MeshBasicMaterial({
+          alphaMap: roundedMaskTexture,
+          map: darkAreaMaskTexture,
+          color: tintColorHex,
+          transparent: true,
+          opacity: darkTintOpacityBase,
+          side: THREE.DoubleSide,
+          depthWrite: false
+        });
+        const darkTintPlane = new THREE.Mesh(new THREE.PlaneGeometry(CARD_W, CARD_H), darkTintMaterial);
+        darkTintPlane.position.set(0, 0, 0.0129);
+        cardGroup.add(darkTintPlane);
 
         updateMaterialControls();
 
@@ -902,7 +932,8 @@
       persistSettings();
       updateMaterialControls();
     });
-    if (typeof featherSlider !== "undefined" && featherSlider) featherSlider.addEventListener("input", () => {
+
+    featherSlider.addEventListener("input", () => {
       featherBase = parseFloat(featherSlider.value);
       persistSettings();
       const newMask = buildFeatheredMaskTexture(featherBase);
@@ -920,6 +951,10 @@
         tintMaterial.alphaMap = newMask;
         tintMaterial.needsUpdate = true;
       }
+      if (darkTintMaterial) {
+        darkTintMaterial.alphaMap = newMask;
+        darkTintMaterial.needsUpdate = true;
+      }
       updateMaterialControls();
     });
 
@@ -928,6 +963,34 @@
       persistSettings();
       updateMaterialControls();
     });
+
+    darkTintSlider.addEventListener("input", () => {
+      darkTintOpacityBase = parseFloat(darkTintSlider.value);
+      persistSettings();
+      updateMaterialControls();
+    });
+
+    contrastSlider.addEventListener("input", async () => {
+      contrastBase = parseFloat(contrastSlider.value);
+      persistSettings();
+      await refreshCardTexture();
+      updateMaterialControls();
+    });
+
+    saturationSlider.addEventListener("input", async () => {
+      saturationBase = parseFloat(saturationSlider.value);
+      persistSettings();
+      await refreshCardTexture();
+      updateMaterialControls();
+    });
+
+    cardBrightnessSlider.addEventListener("input", async () => {
+      brightnessCardBase = parseFloat(cardBrightnessSlider.value);
+      persistSettings();
+      await refreshCardTexture();
+      updateMaterialControls();
+    });
+
     tintColorInput.addEventListener("input", () => {
       tintColorHex = tintColorInput.value;
       persistSettings();
