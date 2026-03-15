@@ -332,6 +332,7 @@
     let currentMaskTexture = null;
     let currentCardTexture = null;
     let currentLumaMaskTexture = null;
+    let currentBorderFrameMaskTexture = null;
     let currentDarkLumaMaskTexture = null;
     let cardGroup = null;
 
@@ -481,6 +482,44 @@
       roundedRect(ctx, innerX, innerY, innerW, innerH, Math.max(8, radius - border*0.6));
       ctx.clip();
       ctx.drawImage(off, innerX, innerY);
+      ctx.restore();
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.colorSpace = THREE.SRGBColorSpace;
+      texture.needsUpdate = true;
+      return texture;
+    }
+
+    async function buildBorderFrameMaskTexture() {
+      const img = await loadImage("./card.png");
+      const cw = 1400;
+      const ch = Math.round(cw * img.height / img.width);
+
+      const border = Math.round(ch * 0.035);
+      const radius = Math.round(ch * 0.07);
+      const innerX = border;
+      const innerY = border;
+      const innerW = cw - border * 2;
+      const innerH = ch - border * 2;
+      const innerRadius = Math.max(8, radius - border * 0.6);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = cw;
+      canvas.height = ch;
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, cw, ch);
+
+      // Fill full rounded card silhouette first
+      roundedRect(ctx, 0, 0, cw, ch, radius);
+      ctx.fillStyle = "rgba(255,255,255,1)";
+      ctx.fill();
+
+      // Remove the inner artwork area so only the white frame remains
+      ctx.save();
+      ctx.globalCompositeOperation = "destination-out";
+      roundedRect(ctx, innerX, innerY, innerW, innerH, innerRadius);
+      ctx.fillStyle = "rgba(255,255,255,1)";
+      ctx.fill();
       ctx.restore();
 
       const texture = new THREE.CanvasTexture(canvas);
@@ -705,6 +744,14 @@
         tintMaterial.needsUpdate = true;
         if (oldWhiteMask) oldWhiteMask.dispose();
       }
+      if (borderTintMaterial) {
+        const newBorderMask = await buildBorderFrameMaskTexture();
+        const oldBorderMask = currentBorderFrameMaskTexture;
+        currentBorderFrameMaskTexture = newBorderMask;
+        borderTintMaterial.map = newBorderMask;
+        borderTintMaterial.needsUpdate = true;
+        if (oldBorderMask) oldBorderMask.dispose();
+      }
       if (darkTintMaterial) {
         const newDarkMask = await buildDarkAreaMaskTexture();
         const oldDarkMask = currentDarkLumaMaskTexture;
@@ -735,6 +782,10 @@
       if (currentLumaMaskTexture) {
         currentLumaMaskTexture.dispose();
         currentLumaMaskTexture = null;
+      }
+      if (currentBorderFrameMaskTexture) {
+        currentBorderFrameMaskTexture.dispose();
+        currentBorderFrameMaskTexture = null;
       }
       if (currentDarkLumaMaskTexture) {
         currentDarkLumaMaskTexture.dispose();
@@ -793,6 +844,8 @@
         currentMaskTexture = roundedMaskTexture;
         const whiteAreaMaskTexture = await buildWhiteAreaMaskTexture();
         currentLumaMaskTexture = whiteAreaMaskTexture;
+        const borderFrameMaskTexture = await buildBorderFrameMaskTexture();
+        currentBorderFrameMaskTexture = borderFrameMaskTexture;
         const darkAreaMaskTexture = await buildDarkAreaMaskTexture();
         currentDarkLumaMaskTexture = darkAreaMaskTexture;
 
@@ -837,6 +890,7 @@
 
         borderTintMaterial = new THREE.MeshBasicMaterial({
           alphaMap: roundedMaskTexture,
+          map: borderFrameMaskTexture,
           color: tintColorHex,
           transparent: true,
           opacity: tintOpacityBase,
