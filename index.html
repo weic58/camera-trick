@@ -288,6 +288,10 @@
         <input id="shadowSlider" type="range" min="0.00" max="1.00" step="0.01" value="0.22">
       </div>
       <div class="settingsRow">
+        <label><span>邊緣柔邊</span><span id="featherValue">0.00</span></label>
+        <input id="featherSlider" type="range" min="0.00" max="0.16" step="0.005" value="0.00">
+      </div>
+      <div class="settingsRow">
         <label><span>顏色濾鏡</span><span id="tintValue">0.00</span></label>
         <input id="tintSlider" type="range" min="0" max="0.60" step="0.01" value="0.00">
       </div>
@@ -344,9 +348,11 @@
     const openSettings = document.getElementById("openSettings");
     const settingsPanel = document.getElementById("settingsPanel");
     const shadowSlider = document.getElementById("shadowSlider");
+    const featherSlider = document.getElementById("featherSlider");
     const tintSlider = document.getElementById("tintSlider");
     const tintColorInput = document.getElementById("tintColor");
     const shadowValue = document.getElementById("shadowValue");
+    const featherValue = document.getElementById("featherValue");
     const tintValue = document.getElementById("tintValue");
 
     let fadeAlpha = 1;
@@ -363,10 +369,13 @@
     let darkMaterial = null;
     let tintMaterial = null;
     let currentFacingFront = false;
+    let currentMaskTexture = null;
+    let cardGroup = null;
 
     const CARD_W = 1.11;
     const CARD_H = 0.79;
     let darkOpacityBase = parseFloat(localStorage.getItem("camera_dark_opacity") ?? "0.22");
+    let featherBase = parseFloat(localStorage.getItem("camera_feather") ?? "0.00");
     let tintOpacityBase = parseFloat(localStorage.getItem("camera_tint_opacity") ?? "0.00");
     let tintColorHex = localStorage.getItem("camera_tint_color") ?? "#ffffff";
 
@@ -379,15 +388,18 @@
 
     function persistSettings(){
       localStorage.setItem("camera_dark_opacity", String(darkOpacityBase));
+      localStorage.setItem("camera_feather", String(featherBase));
       localStorage.setItem("camera_tint_opacity", String(tintOpacityBase));
       localStorage.setItem("camera_tint_color", tintColorHex);
     }
 
     function updateMaterialControls(){
       shadowSlider.value = String(darkOpacityBase);
+      featherSlider.value = String(featherBase);
       tintSlider.value = String(tintOpacityBase);
       tintColorInput.value = tintColorHex;
       shadowValue.textContent = darkOpacityBase.toFixed(2);
+      featherValue.textContent = featherBase.toFixed(3);
       tintValue.textContent = tintOpacityBase.toFixed(2);
 
       if (shadeMaterial) shadeMaterial.opacity = fadeAlpha * 0.10;
@@ -478,14 +490,21 @@
       return texture;
     }
 
-    function buildRoundedMaskTexture() {
+    function buildFeatheredMaskTexture(feather = 0) {
       const cw = 1024, ch = 728;
       const canvas = document.createElement("canvas");
       canvas.width = cw;
       canvas.height = ch;
       const ctx = canvas.getContext("2d");
       ctx.clearRect(0,0,cw,ch);
-      roundedRect(ctx, 0, 0, cw, ch, 54);
+
+      const maxPad = Math.round(Math.min(cw, ch) * 0.18);
+      const pad = Math.round(maxPad * feather / 0.16);
+      const blurPx = feather > 0 ? Math.max(1, Math.round(12 * feather / 0.16)) : 0;
+      const radius = Math.max(10, 54 - Math.round(pad * 0.35));
+
+      if (blurPx > 0) ctx.filter = `blur(${blurPx}px)`;
+      roundedRect(ctx, pad, pad, cw - pad * 2, ch - pad * 2, radius);
       ctx.fillStyle = "#ffffff";
       ctx.fill();
 
@@ -493,6 +512,10 @@
       texture.colorSpace = THREE.SRGBColorSpace;
       texture.needsUpdate = true;
       return texture;
+    }
+
+    function buildRoundedMaskTexture() {
+      return buildFeatheredMaskTexture(featherBase);
     }
 
     function roundedRect(ctx, x, y, w, h, r) {
@@ -531,6 +554,10 @@
           console.warn(e);
         }
       }
+      if (currentMaskTexture) {
+        currentMaskTexture.dispose();
+        currentMaskTexture = null;
+      }
       container.innerHTML = "";
       mindarThree = null;
       renderer = null;
@@ -540,6 +567,7 @@
       shadeMaterial = null;
       darkMaterial = null;
       tintMaterial = null;
+      cardGroup = null;
       setFound(false);
     }
 
@@ -577,18 +605,23 @@
         const cardTexture = await buildCardTexture();
         const surfaceShadeTexture = buildSurfaceShadeTexture();
         const roundedMaskTexture = buildRoundedMaskTexture();
+        currentMaskTexture = roundedMaskTexture;
 
         const geometry = new THREE.PlaneGeometry(CARD_W, CARD_H);
         cardMaterial = new THREE.MeshBasicMaterial({
           map: cardTexture,
+          alphaMap: roundedMaskTexture,
           transparent: true,
           opacity: 1,
           side: THREE.DoubleSide,
           depthWrite: false
         });
+        cardGroup = anchor.group;
+        cardGroup.visible = false;
+
         const cardPlane = new THREE.Mesh(geometry, cardMaterial);
         cardPlane.position.z = 0.01;
-        anchor.group.add(cardPlane);
+        cardGroup.add(cardPlane);
 
         shadeMaterial = new THREE.MeshBasicMaterial({
           map: surfaceShadeTexture,
@@ -602,7 +635,7 @@
           shadeMaterial
         );
         sheenPlane.position.set(0, 0, 0.0115);
-        anchor.group.add(sheenPlane);
+        cardGroup.add(sheenPlane);
 
         darkMaterial = new THREE.MeshBasicMaterial({
           map: roundedMaskTexture,
@@ -617,7 +650,7 @@
           darkMaterial
         );
         darkPlane.position.set(0, 0, 0.0124);
-        anchor.group.add(darkPlane);
+        cardGroup.add(darkPlane);
 
         tintMaterial = new THREE.MeshBasicMaterial({
           map: roundedMaskTexture,
@@ -632,12 +665,18 @@
           tintMaterial
         );
         tintPlane.position.set(0, 0, 0.013);
-        anchor.group.add(tintPlane);
+        cardGroup.add(tintPlane);
 
         updateMaterialControls();
 
-        anchor.onTargetFound = () => setFound(true);
-        anchor.onTargetLost = () => setFound(false);
+        anchor.onTargetFound = () => {
+          if (cardGroup) cardGroup.visible = true;
+          setFound(true);
+        };
+        anchor.onTargetLost = () => {
+          if (cardGroup) cardGroup.visible = false;
+          setFound(false);
+        };
 
         await mindarThree.start();
         if (currentFacingFront) await applyWideFrontCameraIfPossible();
@@ -701,6 +740,27 @@
       persistSettings();
       updateMaterialControls();
     });
+    featherSlider.addEventListener("input", () => {
+      featherBase = parseFloat(featherSlider.value);
+      persistSettings();
+      const newMask = buildFeatheredMaskTexture(featherBase);
+      if (currentMaskTexture) currentMaskTexture.dispose();
+      currentMaskTexture = newMask;
+      if (cardMaterial) {
+        cardMaterial.alphaMap = newMask;
+        cardMaterial.needsUpdate = true;
+      }
+      if (darkMaterial) {
+        darkMaterial.map = newMask;
+        darkMaterial.needsUpdate = true;
+      }
+      if (tintMaterial) {
+        tintMaterial.map = newMask;
+        tintMaterial.needsUpdate = true;
+      }
+      updateMaterialControls();
+    });
+
     tintSlider.addEventListener("input", () => {
       tintOpacityBase = parseFloat(tintSlider.value);
       persistSettings();
