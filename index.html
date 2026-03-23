@@ -343,6 +343,7 @@
     let fadeAnimating = false;
     let fadeStart = 0;
     const fadeDuration = 180;
+    let revealUnlocked = false;
 
     let mindarThree = null;
     let renderer = null;
@@ -394,9 +395,14 @@
     }
 
     function updateConcealOverlay(forceVisible = null){
-      const targetOpacity = concealModeEnabled
-        ? (forceVisible === null ? concealOpacityBase : (forceVisible ? concealOpacityBase : 0))
-        : 0;
+      let targetOpacity = 0;
+      if (concealModeEnabled) {
+        if (revealUnlocked) {
+          targetOpacity = 0;
+        } else {
+          targetOpacity = (forceVisible === null ? concealOpacityBase : (forceVisible ? concealOpacityBase : 0));
+        }
+      }
       concealOverlay.style.opacity = String(targetOpacity);
     }
 
@@ -794,6 +800,7 @@
       tintMaterial = null;
       darkTintMaterial = null;
       cardGroup = null;
+      revealUnlocked = false;
       setFound(false);
       updateConcealOverlay(true);
     }
@@ -911,6 +918,7 @@
 
         anchor.onTargetFound = () => {
           if (cardGroup) cardGroup.visible = true;
+          revealUnlocked = true;
           setFound(true);
           updateConcealOverlay(false);
         };
@@ -939,8 +947,10 @@
     shutter.addEventListener("click", () => {
       fadeAlpha = 1;
       fadeAnimating = false;
+      revealUnlocked = false;
       if (cardMaterial) cardMaterial.opacity = 1;
       updateMaterialControls();
+      updateConcealOverlay(true);
     });
 
     document.body.addEventListener("click", (e) => {
@@ -1072,6 +1082,7 @@
       settingsPanel.classList.remove("open");
     }, true);
 
+    revealUnlocked = false;
     setFound(false);
     updateMaterialControls();
     updateConcealOverlay(true);
